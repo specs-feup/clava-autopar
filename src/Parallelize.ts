@@ -17,6 +17,8 @@ import { Loop, Joinpoint, If, BinaryOp} from "@specs-feup/clava/api/Joinpoints.j
 import { AddPragmaLoopIndex } from "./AddPragmaLoopIndex.js";
 import { RemoveNakedloops } from "./RemovedNakedLoops.js";
 import { NormalizedBinaryOp } from "./NormalizedBinaryOp.js";
+import { LoopInductionVariables } from "./LoopInductionVariables.js";
+import AutoParStats from "./AutoParStats.js";
 
 /**
  * Utility methods for parallelization.

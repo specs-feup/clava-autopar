@@ -14,11 +14,14 @@ import CodeInserter from "@specs-feup/clava/api/clava/util/CodeInserter.js";
 import Io from "@specs-feup/lara/api/lara/Io.js";
 import Query from "@specs-feup/lara/api/weaver/Query.js";
 import { Loop, Joinpoint, If, BinaryOp} from "@specs-feup/clava/api/Joinpoints.js";
-import { AddPragmaLoopIndex } from "./AddPragmaLoopIndex.js";
-import { RemoveNakedloops } from "./RemovedNakedLoops.js";
-import { NormalizedBinaryOp } from "./NormalizedBinaryOp.js";
 import { LoopInductionVariables } from "./LoopInductionVariables.js";
+import  AddPragmaLoopIndex  from "./AddPragmaLoopIndex.js";
+import  RemoveNakedloops  from "./RemovedNakedLoops.js";
+import  NormalizedBinaryOp  from "./NormalizedBinaryOp.js";
 import AutoParStats from "./AutoParStats.js";
+import GetLoopIndex from "./GetLoopIndex.js";
+import ParallelizeLoop from "./ParallelizeLoop.js";
+import { JavaClasses } from "@specs-feup/lara/api/lara/util/JavaTypes.js";
 
 /**
  * Utility methods for parallelization.
@@ -76,39 +79,39 @@ export class Parallelize {
 
 
 	// Transformations to help analysis    
-	RemoveNakedloops($loops, $ifs);
-	AddPragmaLoopIndex($forLoops);
-	RunInlineFunctionCalls();
+	RemoveNakedloops();
+	AddPragmaLoopIndex();
+	RunInlineFunctionCalls(); // missing
 
 	// Rebuild tree	
 	Clava.rebuild();
 	
 	LoopInductionVariables();
-	CheckForSafeFunctionCall();
-	RemoveNakedloops($loops, $ifs);
- 	NormalizedBinaryOp($binaryOps);
+	CheckForSafeFunctionCall(); // missing
+	RemoveNakedloops();
+ 	NormalizedBinaryOp();
 
- 	// Rebuild tree	
-	Clava.rebuild();
-	
+    // Rebuild tree	
+	Clava.rebuild();	
 	
 	// Write stats before attempting parallelization
 	AutoParStats.save();
 	
-    console.log('Parallelizing ' + $forLoops.length + ' for loops...');
+	console.log('Parallelizing ' + $forLoops.length + ' for loops...');
 
 	// Find all loops marked for parallelization
 	//var loopPragmas = {};
-	var parallelLoops = {} as Loop[];
-	var unparallelizableLoops = {} as Loop[];	
+	var parallelLoops = {};
+	var unparallelizableLoops = {};	
 	
-	var $pragmas = Clava.getProgram().getDescendants('pragma');
+	$pragmas = Clava.getProgram().getDescendants('pragma');
 	for(var $pragma of $pragmas) {
-		if($pragma.name !== "parallelize_id") {
-			continue;
-		}
+	if($pragma.name !== "parallelize_id") {
+		continue;
+	}
 
-		var parallelization = ParallelizeLoop($pragma.target);
+	ParallelizeLoop($pragma.target);
+
 	}
 
 	// Revert AST changes
@@ -120,16 +123,13 @@ export class Parallelize {
 	}
 	
 	for(var $loop of Query.search('loop').get()) {
-	//select file.function.loop end
-	//apply
 		var loopindex = GetLoopIndex($loop);
 		if 	(OmpPragmas[loopindex] !== undefined && loopIds.includes($loop.id))
 		{
 			if(insertPragma) {
-				$loop.insert before OmpPragmas[loopindex].pragmaCode;
+				$loop.insert("before", OmpPragmas[loopindex].pragmaCode);
 			}
 
-		//	parallelLoops[$pragma.content] = OmpPragmas[loopindex].pragmaCode;
 			var pragmaCode = OmpPragmas[loopindex].pragmaCode;
 			var loopId = useLoopId ? $loop.id : $loop.astId;
 			if(pragmaCode.startsWith("#pragma")) {
@@ -140,7 +140,6 @@ export class Parallelize {
 
 		}
 
-	//end
 	}
 
 	//Clava.rebuild();
@@ -151,82 +150,60 @@ export class Parallelize {
 	result["unparallelizableLoops"] = unparallelizableLoops;
 	
 	return result;
-	
-}	
-
-}
-
-/*
-var Parallelize = {};
-var OmpPragmas = {};
-*/
-/**
- * @param $loops {$loop[]} an array of for loops to attempt to parallelize. If undefined, tries to parallelize all for loops in the program.
- */
-/*
-Parallelize.forLoops = function($loops) {
-
-	//var parallelLoops = Parallelize.getForLoopsPragmas($loops);
-	var autoparResult = Parallelize.getForLoopsPragmas($loops, true);
-	var parallelLoops = autoparResult["parallelLoops"];
-	var unparallelizableLoops = autoparResult["unparallelizableLoops"];
-
-	
-    console.log('Parallelization finished');    
-}
-*/
-
-/**
- *
- */
-/*
-Parallelize.forLoopsAsText = function($loops, outputFolder) {
-
-	if(outputFolder === undefined) {
-		outputFolder = Io.getPath("./");
-	}
-
-	var autoparResult = Parallelize.getForLoopsPragmas($loops, true);
-	var parallelLoops = autoparResult["parallelLoops"];
-	var unparallelizableLoops = autoparResult["unparallelizableLoops"];
-
-	var codeInserter = new CodeInserter();
-	var filesWithPragmas = {};
-	
-	// Add pragmas to loops
-	for(var $loop of $loops) 
-	{
-		var ompPragma = parallelLoops[$loop.astId];
-		if(ompPragma === undefined)
-		{
-			//console.log("Could not parallelize loop@"+$loop.location+":\n -> " + unparallelizableLoops[$loop.astId]);
-			continue;
-		}
+	}	
 
 
-		var $file = $loop.getAncestor("file");
-		if($file === undefined)
-		{
-			console.log("Could not find a file associated with loop@"+$loop.location);
-			continue;
-		}
-		
-		codeInserter.add($file, $loop.line, ompPragma);
-		
-		// Add file
-		filesWithPragmas[$file] = true;
-	}
-	
-	// Add includes to files that have pragmas
-	for(var $file in filesWithPragmas) {
-		codeInserter.add($file, 1, "#include <omp.h>");
-	}
-	
-	codeInserter.write(outputFolder);
-	
+
+
+
+	static forLoopsAsText ($loops : Loop[], outputFolder : any) {
+
+    if(outputFolder === undefined) {
+        outputFolder = Io.getPath("./");
+    }
+
+    var autoparResult = Parallelize.getForLoopsPragmas($loops, true);
+    var parallelLoops = autoparResult["parallelLoops"];
+    var unparallelizableLoops = autoparResult["unparallelizableLoops"];
+
+    var codeInserter = new CodeInserter();
+    var filesWithPragmas = {};
+    
+    // Add pragmas to loops
+    for(var $loop of $loops) 
+    {
+        var ompPragma = parallelLoops[$loop.astId];
+        if(ompPragma === undefined)
+        {
+            //console.log("Could not parallelize loop@"+$loop.location+":\n -> " + unparallelizableLoops[$loop.astId]);
+            continue;
+        }
+
+
+        var $file = $loop.getAncestor("file");
+        if($file === undefined)
+        {
+            console.log("Could not find a file associated with loop@"+$loop.location);
+            continue;
+        }
+        
+        codeInserter.add($file, $loop.line, ompPragma);
+        
+        // Add file
+        filesWithPragmas[$file] = true;
+    }
+    
+    // Add includes to files that have pragmas
+    for(var $file in filesWithPragmas) {
+        codeInserter.add($file, 1, "#include <omp.h>");
+    }
+    
+    codeInserter.write(outputFolder);
+    
     console.log('Parallelization finished');    	
 }
-*/
+}
+
 
 /**
  *

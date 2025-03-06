@@ -1,12 +1,16 @@
-import Clava from "@specs-feup/clava/api/clava/Clava.js";
-import CodeInserter from "@specs-feup/clava/api/clava/util/CodeInserter.js";
-import Io from "@specs-feup/lara/api/lara/Io.js";
+/**************************************************************
+ *
+ *                       AddPragmaLoopIndex
+ *
+ **************************************************************/
+
 import Query from "@specs-feup/lara/api/weaver/Query.js";
-import { Loop, Joinpoint } from "@specs-feup/clava/api/Joinpoints.js";
+import { FileJp, Loop } from "@specs-feup/clava/api/Joinpoints.js";
+import GetLoopIndex from "./GetLoopIndex.js";
 
-export function AddPragmaLoopIndex($forLoops : Loop[]) {
-    for(var loop of $forLoops) {
-        loop.insertBefore(`//loopindex ${loop.id}`);
+export default function AddPragmaLoopIndex() {
+    for (const $loop of Query.search(FileJp).search(Loop, { kind: "for" })) {
+        const loopindex = GetLoopIndex($loop);
+        $loop.body.insert("before", "//loopindex " + loopindex);
     }
-
-};
+}

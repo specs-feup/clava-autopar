@@ -1,19 +1,32 @@
-import { BinaryOp } from "@specs-feup/clava/api/Joinpoints.js";
+/**************************************************************
+ *
+ *                       NormalizedBinaryOp
+ *
+ **************************************************************/
+import Query from "@specs-feup/lara/api/weaver/Query.js";
+import { BinaryOp, FileJp, FunctionJp } from "@specs-feup/clava/api/Joinpoints.js";
 
-export function NormalizedBinaryOp(binaryOps : BinaryOp[]) {
-    for (var op of binaryOps){
-        if (op.astName === 'CompoundAssignOperator')
-            var compoundOp = null;
-            if (op.kind === 'add')
-                compoundOp = '+';
-            else if (op.kind === 'sub')
-                compoundOp = '-';
-            else if (op.kind === 'mul')
-                compoundOp = '*';
-            else if (op.kind === 'div')
-                compoundOp = '/';
+export default function NormalizedBinaryOp() {
+    for (const $binaryOp of Query.search(FileJp)
+        .search(FunctionJp)
+        .search(BinaryOp, { astName: "CompoundAssignOperator" })) {
+        let Op = null;
+        if ($binaryOp.kind === "add") Op = "+";
+        else if ($binaryOp.kind === "sub") Op = "-";
+        else if ($binaryOp.kind === "mul") Op = "*";
+        else if ($binaryOp.kind === "div") Op = "/";
 
-            if (compoundOp !== null)
-                op.insert("replace", `${op.left.code} = ${op.left.code} ${compoundOp} ( ${op.right.code} )`) ;
+        if (Op !== null) {
+            $binaryOp.insert(
+                "replace",
+                $binaryOp.left.code +
+                    "=" +
+                    $binaryOp.left.code +
+                    Op +
+                    "(" +
+                    $binaryOp.right.code +
+                    ")"
+            );
+        }
     }
 }

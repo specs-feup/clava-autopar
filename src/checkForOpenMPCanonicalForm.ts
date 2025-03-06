@@ -5,7 +5,7 @@
 **************************************************************/
 
 import Query from "@specs-feup/lara/api/weaver/Query.js";
-import { ArrayAccess, BinaryOp, Expression, FunctionJp, Loop, MemberAccess, Statement, UnaryOp, Vardecl, Varref } from "../../Joinpoints.js";
+import { ArrayAccess, BinaryOp, Expression, FunctionJp, Loop, MemberAccess, Statement, UnaryOp, Vardecl, Varref } from "@specs-feup/clava/api/Joinpoints.js";
 import GetLoopIndex from "./GetLoopIndex.js"; //mudar para pasta utils
 import Add_msgError from "./Add_msgError.js"; //mudar para pasta utils
 import checkForInvalidStmts from "./checkForInvalidStmts.js";

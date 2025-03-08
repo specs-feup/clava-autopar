@@ -4,9 +4,9 @@
  *
  **************************************************************/
 import ClavaJavaTypes from "@specs-feup/clava/api/clava/ClavaJavaTypes.js";
-import { FunctionJp, Loop } from "../../Joinpoints.js";
+import { FunctionJp, Loop } from "@specs-feup/clava/api/Joinpoints.js";
 import GetLoopIndex from "./GetLoopIndex.js";
-import Clava from "../Clava.js";
+import Clava from "@specs-feup/clava/api/clava/Clava.js";
 import Io from "@specs-feup/lara/api/lara/Io.js";
 import Strings from "@specs-feup/lara/api/lara/Strings.js";
 import { allReplace } from "./allReplace.js";

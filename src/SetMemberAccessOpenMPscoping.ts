@@ -2,7 +2,7 @@ import { printObject } from "@specs-feup/lara/api/core/output.js";
 import Add_msgError from "./Add_msgError.js";
 import SearchStruct from "./SearchStruct.js";
 import GetLoopIndex from "./GetLoopIndex.js";
-import { Loop } from "../../Joinpoints.js";
+import { Loop } from "@specs-feup/clava/api/Joinpoints.js";
 import { LoopOmpAttributes } from "./checkForOpenMPCanonicalForm.js";
 
 /**************************************************************

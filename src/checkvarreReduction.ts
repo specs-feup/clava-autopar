@@ -5,7 +5,7 @@
  **************************************************************/
 
 import Query from "@specs-feup/lara/api/weaver/Query.js";
-import { BinaryOp, Body, Expression, Loop, UnaryOp } from "../../Joinpoints.js";
+import { BinaryOp, Body, Expression, Loop, UnaryOp } from "@specs-feup/clava/api/Joinpoints.js";
 import GetLoopIndex from "./GetLoopIndex.js";
 import SearchStruct from "./SearchStruct.js";
 import { orderedVarrefs3 } from "./orderedVarrefs3.js";

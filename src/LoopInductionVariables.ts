@@ -7,7 +7,7 @@ import {
     FunctionJp,
     Loop,
     Varref,
-} from "../../Joinpoints.js";
+} from "@specs-feup/clava/api/Joinpoints.js";
 import AutoParStats from "./AutoParStats.js";
 
 /**************************************************************

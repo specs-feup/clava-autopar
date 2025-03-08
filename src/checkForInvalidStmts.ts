@@ -1,5 +1,5 @@
 import Query from "@specs-feup/lara/api/weaver/Query.js";
-import { Call, Loop, Statement } from "../../Joinpoints.js";
+import { Call, Loop, Statement } from "@specs-feup/clava/api/Joinpoints.js";
 
 /**************************************************************
  *

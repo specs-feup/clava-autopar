@@ -1,5 +1,5 @@
 import Query from "@specs-feup/lara/api/weaver/Query.js";
-import { Body, FileJp, FunctionJp, If, Loop } from "../../Joinpoints.js";
+import { Body, FileJp, FunctionJp, If, Loop } from "@specs-feup/clava/api/Joinpoints.js";
 
 /**************************************************************
  *

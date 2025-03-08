@@ -8,7 +8,7 @@ import {
     QualType,
     TypedefType,
     Varref,
-} from "../../Joinpoints.js";
+} from "@specs-feup/clava/api/Joinpoints.js";
 import { normalizeVarName } from "./allReplace.js";
 
 /**************************************************************

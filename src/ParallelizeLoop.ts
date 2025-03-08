@@ -11,7 +11,7 @@ import SetVarrefOpenMPscoping from "./SetVarrefOpenMPscoping.js";
 import BuildPetitFileInput from "./BuildPetitFileInput.js";
 import ExecPetitDependencyTest from "./ExecPetitDependencyTest.js";
 import SetArrayAccessOpenMPscoping from "./SetArrayAccessOpenMPscoping.js";
-import { Loop } from "../../Joinpoints.js";
+import { Loop } from "@specs-feup/clava/api/Joinpoints.js";
 
 export default function ParallelizeLoop($ForStmt: Loop) {
 

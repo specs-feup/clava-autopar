@@ -4,7 +4,7 @@
  *
  **************************************************************/
 import Query from "@specs-feup/lara/api/weaver/Query.js";
-import { BinaryOp, FileJp, FunctionJp } from "../../Joinpoints.js";
+import { BinaryOp, FileJp, FunctionJp } from "@specs-feup/clava/api/Joinpoints.js";
 
 export default function NormalizedBinaryOp() {
     for (const $binaryOp of Query.search(FileJp)

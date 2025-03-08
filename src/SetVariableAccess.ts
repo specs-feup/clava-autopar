@@ -1,5 +1,5 @@
 import Query from "@specs-feup/lara/api/weaver/Query.js";
-import { Call, FunctionJp, If, Loop, Param, Statement, Varref } from "../../Joinpoints.js";
+import { Call, FunctionJp, If, Loop, Param, Statement, Varref } from "@specs-feup/clava/api/Joinpoints.js";
 import { LoopOmpAttributes } from "./checkForOpenMPCanonicalForm.js";
 import get_varTypeAccess from "./get_varTypeAccess.js";
 import Add_msgError from "./Add_msgError.js";

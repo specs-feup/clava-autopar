@@ -5,7 +5,7 @@
  **************************************************************/
 
 import Query from "@specs-feup/lara/api/weaver/Query.js";
-import { Loop, Vardecl, Varref } from "../../Joinpoints.js";
+import { Loop, Vardecl, Varref } from "@specs-feup/clava/api/Joinpoints.js";
 import Add_msgError from "./Add_msgError.js";
 import checkvarreReduction from "./checkvarreReduction.js";
 import GetLoopIndex from "./GetLoopIndex.js";

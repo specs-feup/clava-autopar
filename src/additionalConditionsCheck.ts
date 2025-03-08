@@ -7,7 +7,7 @@ import Query from "@specs-feup/lara/api/weaver/Query.js";
 import Add_msgError from "./Add_msgError.js";
 import checkForFunctionCalls from "./checkForFunctionCalls.js";
 import GetLoopIndex from "./GetLoopIndex.js";
-import { ArrayAccess, Loop } from "../../Joinpoints.js";
+import { ArrayAccess, Loop } from "@specs-feup/clava/api/Joinpoints.js";
 import { LoopOmpAttributes } from "./checkForOpenMPCanonicalForm.js";
 
 export default function additionalConditionsCheck($ForStmt: Loop) {

@@ -6,7 +6,7 @@ import {
     MemberAccess,
     Statement,
     Varref,
-} from "../../Joinpoints.js";
+} from "@specs-feup/clava/api/Joinpoints.js";
 
 /**************************************************************
  *

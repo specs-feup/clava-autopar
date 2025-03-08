@@ -3,7 +3,7 @@
 *                       SetArrayAccessOpenMPscoping
 * 
 **************************************************************/
-import { Loop } from "../../Joinpoints.js";
+import { Loop } from "@specs-feup/clava/api/Joinpoints.js";
 import Add_msgError from "./Add_msgError.js";
 import { LoopOmpAttributes } from "./checkForOpenMPCanonicalForm.js";
 import FindReductionArrays from "./FindReductionArrays.js";

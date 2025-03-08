@@ -1,4 +1,4 @@
-import { FunctionJp, Loop } from "../../Joinpoints.js";
+import { FunctionJp, Loop } from "@specs-feup/clava/api/Joinpoints.js";
 import { LoopOmpAttributes } from "./checkForOpenMPCanonicalForm.js";
 import GetLoopIndex from "./GetLoopIndex.js";
 

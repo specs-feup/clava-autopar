@@ -14,8 +14,8 @@ export default function Add_msgError(
 ) {
     const loopindex = GetLoopIndex($ForStmt);
 
-    if (LoopOmpAttributes[loopindex].msgError === undefined)
-        LoopOmpAttributes[loopindex].msgError = [];
+    if (LoopOmpAttributes[loopindex] === undefined)
+        throw new Error(`Loop Index is not defined: ${loopindex}`);
 
     if (typeof msgError === "string") {
         LoopOmpAttributes[loopindex].msgError.push(msgError);

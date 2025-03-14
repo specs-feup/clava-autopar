@@ -3,70 +3,62 @@
 *               RemoveOpenMPfromInnerloop
 * 
 **************************************************************/
-aspectdef RemoveOpenMPfromInnerloop
 
-    select program.file.function.body.omp end
-    apply
-        if ($omp.kind === 'parallel for')
-        {
-            if (typeof $omp.target !== 'undefined')
-                call RemoveSubOmpParallel($omp.target);
-        }
-    end
+import Query from "@specs-feup/lara/api/weaver/Query.js";
+import { Body, Call, FileJp, FunctionJp, Loop, Omp } from "@specs-feup/clava/api/Joinpoints.js";
 
 
-    var exclude_func_from_Omp = [];
-    select program.file.function.body.omp end
-    apply
-        if ($omp.kind === 'parallel for')
-        {
-            if (typeof $omp.target !== 'undefined')
-            {
-                call o : find_func_call($omp.target);
-                for(var func_name of o.func_names)
+export default function RemoveOpenMPfromInnerloop() {
+
+    for (const $omp of Query.search(FileJp)
+        .search(FunctionJp)
+        .search(Body)
+        .search(Omp, { kind: "parallel for" })) {
+        if (typeof $omp.target !== 'undefined')
+            RemoveSubOmpParallel($omp.target as Loop);
+    }
+
+
+    const exclude_func_from_Omp: string[] = [];
+
+    for (const $omp of Query.search(FileJp)
+        .search(FunctionJp)
+        .search(Body)
+        .search(Omp, { kind: "parallel for" })) {
+        if (typeof $omp.target !== 'undefined') {
+            const func_names = find_func_call($omp.target as Loop);
+            for (const func_name of func_names)
                 if (exclude_func_from_Omp.indexOf(func_name) === -1)
                     exclude_func_from_Omp.push(func_name);
-            }
         }
-    end
+    }
 
-    select program.file.function.body.omp end
-    apply
-        func_name = $omp.getAstAncestor('FunctionDecl').name;
+    for (const $omp of Query.search(FileJp)
+        .search(FunctionJp)
+        .search(Body)
+        .search(Omp, { kind: "parallel for" })) {
+        const func_name = ($omp.getAncestor('function') as FunctionJp).name;
         if (exclude_func_from_Omp.indexOf(func_name) !== -1)
-            
-            $omp.insert replace('// #pragma omp ' + $omp.content + '   remove due to be part of parallel section for function call');
-
-    end
-    condition $omp.kind === 'parallel for' end
-
-end
+            $omp.insert("replace", '// #pragma omp ' + $omp.content + '   remove due to be part of parallel section for function call');
+    }
+}
 /**************************************************************
 * 
 *                     RemoveSubOmpParallel
 * 
 **************************************************************/
-aspectdef RemoveSubOmpParallel
-    input $loop end
+function RemoveSubOmpParallel($loop: Loop) {
+    for (const $omp of Query.searchFrom($loop, Body).search(Omp, { kind: "parallel for" })) {
+        $omp.insert("replace", '// #pragma omp ' + $omp.content);
+    }
+}
 
-    select $loop.body.omp end
-    apply
-        if ($omp.kind === 'parallel for')
-            $omp.insert replace('// #pragma omp ' + $omp.content);
-    end
+function find_func_call($loop: Loop): Array<string> {
+    const func_names: string[] = [];
 
-end
+    for (const $call of Query.searchFrom($loop, Body).search(Call, { astName: "CallExpr" })) {
+        func_names.push($call.name);
+    }
 
-
-aspectdef find_func_call
-    input $loop end
-    output func_names end
-    this.func_names = [];
-
-    select $loop.body.call end
-    apply
-        this.func_names.push($call.name);
-    end
-    condition $call.astName === 'CallExpr' end
-
-end
+    return func_names;
+}

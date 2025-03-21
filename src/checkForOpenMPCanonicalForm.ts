@@ -13,7 +13,7 @@ import Strings from "@specs-feup/lara/api/lara/Strings.js";
 import { VarAccess } from "./SetVariableAccess.js";
 
 export interface LoopOmpAttribute {
-    msgError?: string[],
+    msgError: string[],
     astId?: string,
     loopindex?: string,
     innerloopsControlVarname?: string[]
@@ -53,7 +53,7 @@ export interface InitVarref {
     loc : string
 }
 
-export const LoopOmpAttributes: Record<string, LoopOmpAttribute>;
+export const LoopOmpAttributes: Record<string, LoopOmpAttribute> = {};
 
 export default function checkForOpenMPCanonicalForm($ForStmt: Loop) {
 
@@ -235,7 +235,7 @@ export default function checkForOpenMPCanonicalForm($ForStmt: Loop) {
              condIterationValue = Number($binaryOp.left.code);
          else if ($binaryOp.right.astName === 'IntegerLiteral')
              condIterationValue = Number($binaryOp.right.code);
-         break #$ForStmt;
+         break;
     }
     
      if (['lt','le','gt','ge'].indexOf(condbinaryOp[0]) == -1)
@@ -261,7 +261,7 @@ export default function checkForOpenMPCanonicalForm($ForStmt: Loop) {
         $stepExpr = $step;
          $stepOpExpr = $expr;
          stepOp = ($expr as UnaryOp | BinaryOp).kind;
-         break #$ForStmt;
+         break;
     }
      
 

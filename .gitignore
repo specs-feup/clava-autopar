@@ -1,6 +1,6 @@
 ##### User-added #####
 woven_code/
-/dist
+/api
 /docs
 package-lock.json
 .vscode/settings.json

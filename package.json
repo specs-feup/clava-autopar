@@ -5,18 +5,18 @@
     "description": "A template for developing projects for Clava in Typescript",
     "type": "module",
     "files": [
-      "api",
-      "src",
-      ".gitignore",
-      "jest.config.js",
-      "LICENSE",
-      "package-lock.json",
-      "package.json",
-      "README.md",
-      "tsconfig.jest.json",
-      "tsconfig.json",
-      "typedoc.config.js"
-    ],     
+        "api",
+        "src",
+        ".gitignore",
+        "eslint.config.js",
+        "jest.config.js",
+        "LICENSE",
+        "package.json",
+        "README.md",
+        "tsconfig.jest.json",
+        "tsconfig.json",
+        "typedoc.config.js"
+    ],
     "scripts": {
         "run": "npx clava classic dist/main.js -p CxxSources/",
         "run:watch": "npx clava dist/main.js -w dist/main.js -- clang CxxSources/",
@@ -30,7 +30,7 @@
     },
     "dependencies": {
         "@specs-feup/clava": "^3.0.8",
-        "@specs-feup/lara": "^3.0.5"        
+        "@specs-feup/lara": "^3.0.5"
     },
     "devDependencies": {
         "@jest/globals": "^29.7.0",

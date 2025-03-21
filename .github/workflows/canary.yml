@@ -1,0 +1,83 @@
+# This workflow will build a the whole project every day at midnight
+# It will build the Java part and the JS part
+# Every push to a branch will trigger the build
+# Every pull request will trigger the build
+
+name: Canary Tests
+
+on:
+    push:
+    workflow_dispatch:
+
+permissions:
+    checks: write
+    contents: read
+
+env:
+    JAVA_VERSION: 17
+    NODE_VERSION: 20.x
+    CLAVA_BRANCH: PluginAndTool
+
+jobs:
+    test:
+        name: Test
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Setup Java
+              uses: actions/setup-java@v4
+              with:
+                  distribution: "temurin"
+                  java-version: ${{ env.JAVA_VERSION }}
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ env.NODE_VERSION }}
+                  registry-url: "https://registry.npmjs.org/"
+
+            - name: Install dependencies
+              run: |
+                  sudo apt-get install -y cmake make wget
+
+            - name: Checkout Project
+              uses: actions/checkout@v4
+              with:
+                  path: clava-autopar
+
+            - name: Checkout Tests Repository
+              uses: actions/checkout@v4
+              with:
+                  repository: specs-feup/specs-lara
+                  sparse-checkout: "ANTAREX/AutoPar"
+                  path: specs-lara
+
+            - name: Fetch ClavaConfig.cmake
+              uses: actions/checkout@v4
+              with:
+                  repository: specs-feup/clava
+                  path: clava
+                  sparse-checkout: "CMake"
+                  ref: ${{env.CLAVA_BRANCH}}
+
+            - name: Move ClavaConfig.cmake
+              run: |
+                  sudo mkdir -p /usr/local/lib/Clava
+                  sudo mv clava/CMake/* /usr/local/lib/Clava/
+
+            - name: Setup js workspace
+              run: |
+                  echo '{ "name": "SPeCS Workspace", "type": "module", "workspaces": [ "clava-autopar" ] }' > package.json
+                  npm install
+
+            - name: Build Project
+              # TODO: Remove continue-on-error when build is stable
+              continue-on-error: true
+              run: |
+                  cd clava-autopar
+                  npm run build
+
+            - name: Test
+              run: |
+                  cmake -DLOCAL_CLAVA:STRING="npx clava classic" specs-lara/ANTAREX/AutoPar
+                  make

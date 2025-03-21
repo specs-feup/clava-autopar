@@ -3,6 +3,7 @@ woven_code/
 /dist
 /docs
 package-lock.json
+.vscode/settings.json
 
 # Extensions
 ltex.dictionary.*

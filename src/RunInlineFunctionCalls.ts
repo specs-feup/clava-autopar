@@ -36,11 +36,11 @@ function applyFunctionCall(): void {
     for (const $function of Query.search(FileJp)
         .search(FunctionJp)) {
     
-        let innerCalls : Joinpoint[] = $function.getDescendants("call");
+        let innerCalls = $function.getDescendants("call") as Call[];
         func_name[$function.name] = { innerCallNumber: innerCalls.length, CallingFunc: [] };
 
         for(const obj of innerCalls){
-            const callName = (obj as Call).name;
+            const callName = obj.name;
             if (!safefunctionCallslist.includes(callName)) {
                 func_name[$function.name].CallingFunc.push(callName);
             }
@@ -78,11 +78,11 @@ function applyFunctionCall(): void {
     for (const $function of Query.search(FileJp)
         .search(FunctionJp)) {
     
-        let innerCalls : Joinpoint[] = $function.getDescendants("call");
+        let innerCalls  = $function.getDescendants("call") as Call[];
         func_name[$function.name] = { innerCallNumber: innerCalls.length, CallingFunc: [] };
 
         for (const obj of innerCalls) {
-            const callName = (obj as Call).name;
+            const callName = obj.name;
 
             if (!safefunctionCallslist.includes(callName) && func_name[callName] === undefined) {
                 if (!excluded_function_list.includes($function.name)) {

@@ -1,111 +1,105 @@
+import { Type, Joinpoint, FunctionJp, FileJp, Call } from "@specs-feup/clava/api/Joinpoints.js";
+import AutoParStats from "./AutoParStats.js"
+import Query from "@specs-feup/lara/api/weaver/Query.js";
+import { safefunctionCallslist } from "./SafeFunctionCalls.js";
+import JoinPoints from "@specs-feup/lara/api/weaver/JoinPoints.js";
+
+
 /**************************************************************
 * 
 *                       RunInlineFunctionCalls
 * 
 **************************************************************/
-import clava.ClavaJoinPoints;
-import clava.ClavaType;
 
-import clava.autopar.AutoParStats;
+let countCallInlinedFunction: number;
 
-var countCallInlinedFunction;
-aspectdef RunInlineFunctionCalls
+interface FunctionData {
+    innerCallNumber: number;
+    CallingFunc: string[];
+}
+
+const func_name: Record<string, FunctionData> = {};
+countCallInlinedFunction = 0;
+
+function applyFunctionCall(): void {
+    for (const $function of Query.search(FileJp)
+        .search(FunctionJp)) {
+
+        if (func_name[$function.name] === undefined){
+            func_name[$function.name] = {
+                innerCallNumber: 0,
+                CallingFunc: []
+            };
+        };     
+    }
+
+    for (const $function of Query.search(FileJp)
+        .search(FunctionJp)) {
     
-        
-    var func_name = {};
-    countCallInlinedFunction = 0;
-    select file.function end
-    apply
-        if (func_name[$function.name] === undefined)
-        {
-            func_name[$function.name] = {};
-            func_name[$function.name].innerCallNumber = 0;
-            func_name[$function.name].CallingFunc = [];
+        let innerCalls : Joinpoint[] = $function.getDescendants("call");
+        func_name[$function.name] = { innerCallNumber: innerCalls.length, CallingFunc: [] };
+
+        for(const obj of innerCalls){
+            const callName = (obj as Call).name;
+            if (!safefunctionCallslist.includes(callName)) {
+                func_name[$function.name].CallingFunc.push(callName);
+            }
         }
-    end
-
-    select file.function end
-    apply
-        var innerCalls = $function.getDescendants('call');
-
-        func_name[$function.name].innerCallNumber = innerCalls.length;
-        for(var obj of innerCalls)
-            if (safefunctionCallslist.indexOf(obj.name) === -1)
-                func_name[$function.name].CallingFunc.push(obj.name);
-    end
-
-
-
-
-    var flag = false;
-    while(1)
+    }
+    
+    let flag = false;
+    while(true)
     {
         flag = false;
-        for (var caller_func in func_name)
-            for(var calling of func_name[caller_func].CallingFunc)
-                if (calling !== caller_func && func_name[calling] !== undefined )
-                {
-                    for(var func of func_name[calling].CallingFunc)
-                        if (func_name[caller_func].CallingFunc.indexOf(func) ===-1 )
-                        {
+        for (const caller_func in Object.keys(func_name))
+            for(const calling of func_name[caller_func].CallingFunc)
+                if (calling !== caller_func && func_name[calling] !== undefined ){
+                    for(const func of func_name[calling].CallingFunc)
+                        if (!func_name[caller_func].CallingFunc.includes(func)){
                             func_name[caller_func].CallingFunc.push(func);
                             flag = true;
                         }
                 }
 
-        if (flag === false)
-            break;
+        if (!flag) break;
     }
 
-
-    
-    var excluded_function_list = [];
+    let excluded_function_list: string[] = [];
     // check for recursive function calls
-    for (var caller_func in func_name)
-    {
+    for (const callerFunc of Object.keys(func_name)) {
+        if (func_name[callerFunc].CallingFunc.includes(callerFunc) && !excluded_function_list.includes(callerFunc)){
 
-        if (
-            func_name[caller_func].CallingFunc.indexOf(caller_func) !== -1 &&
-            excluded_function_list.indexOf(caller_func) === -1 // not exist
-            )
-            {
-                debug("Excluding from inlining '" + caller_func + "', because it is recursive");
-                excluded_function_list.push(caller_func);
-                AutoParStats.get().incInlineAnalysis(AutoParStats.EXCLUDED_RECURSIVE, caller_func);
-            }
-
-    
+            // console.debug(`Excluding from inlining '${callerFunc}', because it is recursive`);
+            excluded_function_list.push(callerFunc);
+            AutoParStats.get().incInlineAnalysis(AutoParStats.EXCLUDED_RECURSIVE, callerFunc);
+        }
     }
     
+    for (const $function of Query.search(FileJp)
+        .search(FunctionJp)) {
+    
+        let innerCalls : Joinpoint[] = $function.getDescendants("call");
+        func_name[$function.name] = { innerCallNumber: innerCalls.length, CallingFunc: [] };
 
-    select file.function end
-    apply
-        var innerCalls = $function.getDescendants('call');
+        for (const obj of innerCalls) {
+            const callName = (obj as Call).name;
 
-        for(var obj of innerCalls)
-            if (safefunctionCallslist.indexOf(obj.name) === -1 && func_name[obj.name] === undefined  )
-                if (excluded_function_list.indexOf($function.name) === -1) { // not exist
-                    debug("Excluding from inlining '" + caller_func + "', because is not considered safe (func_name[obj.name]: " + func_name[obj.name] + ")");
+            if (!safefunctionCallslist.includes(callName) && func_name[callName] === undefined) {
+                if (!excluded_function_list.includes($function.name)) {
+                    // console.debug(`Excluding from inlining '${function.name}', because it is not considered safe (func_name[callName]: ${func_name[]})`);
                     excluded_function_list.push($function.name);
                     AutoParStats.get().incInlineAnalysis(AutoParStats.EXCLUDED_IS_UNSAFE, $function.name);
                 }
-    end
+            }
+        }
+    }
 
 
     // Exclude functions that have global variable declarations
     select file.function.body.vardecl end
     apply
-        /*
-        if($vardecl.isGlobal !== ($vardecl.storageClass === 'static')) {
-            console.log("DIFF!!!");
-            console.log("isGlobal: " + $vardecl.isGlobal);
-            console.log("Storage class: " + $vardecl.storageClass);
-        }
-        */
-
         
         if(!$vardecl.isGlobal) {
-        //if($vardecl.storageClass !== 'static') {		
             continue;
         }
         
@@ -115,28 +109,6 @@ aspectdef RunInlineFunctionCalls
             AutoParStats.get().incInlineAnalysis(AutoParStats.EXCLUDED_GLOBAL_VAR, $function.name);
         }
     end
-    //condition $vardecl.storageClass === 'static' end
-    //condition $vardecl.isGlobal end
-
-    /*
-    // Exclude functions that have references to global variables
-    select file.function.body.varref end
-    apply
-        var $vardecl = $varref.declaration;
-        if($vardecl === undefined) {
-            continue;
-        }
-    
-        if(!$vardecl.isGlobal) {
-            continue;
-        }
-    
-        if (excluded_function_list.indexOf($function.name) === -1) {
-            debug("Excluding from inlining '" + $function.name + "', because it has references to global variables");		
-            excluded_function_list.push($function.name);
-        }
-    end
-    */
 
     for (var caller_func in func_name)
         for(var calling of func_name[caller_func].CallingFunc)
@@ -168,7 +140,7 @@ aspectdef RunInlineFunctionCalls
             call callInline(sorted[i][0]);
         }
 end
-
+}
 
 
 /**************************************************************

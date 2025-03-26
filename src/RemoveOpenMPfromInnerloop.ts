@@ -49,7 +49,7 @@ function RemoveSubOmpParallel($loop: Loop) {
     }
 }
 
-function find_func_call($loop: Loop): Array<string> {
+function find_func_call($loop: Loop): string[] {
     const func_names: string[] = [];
 
     for (const $call of Query.searchFrom($loop.body, Call, { astName: "CallExpr" })) {

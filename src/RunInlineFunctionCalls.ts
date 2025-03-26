@@ -3,6 +3,7 @@ import AutoParStats from "./AutoParStats.js"
 import Query from "@specs-feup/lara/api/weaver/Query.js";
 import { safefunctionCallslist } from "./SafeFunctionCalls.js";
 import JoinPoints from "@specs-feup/lara/api/weaver/JoinPoints.js";
+import {debug} from "@specs-feup/lara/api/lara/core/LaraCore.js"
 
 
 /**************************************************************

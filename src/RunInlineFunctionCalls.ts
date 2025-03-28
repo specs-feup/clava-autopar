@@ -1,174 +1,151 @@
+import { Type, FunctionJp, FileJp, Call, Body, Vardecl, ExprStmt, BinaryOp, Program, ReturnStmt, Varref, Param, Cast, ArrayAccess, Statement, Expression, Comment } from "@specs-feup/clava/api/Joinpoints.js";
+import AutoParStats from "./AutoParStats.js"
+import { allReplace } from "./allReplace.js"
+import Query from "@specs-feup/lara/api/weaver/Query.js";
+import { safefunctionCallslist } from "./SafeFunctionCalls.js";
+import ClavaJoinPoints from "@specs-feup/clava/api/clava/ClavaJoinPoints.js";
+import ClavaType from "@specs-feup/clava/api/clava/ClavaType.js";
+import {debug} from "@specs-feup/lara/api/lara/core/LaraCore.js"
+
+
 /**************************************************************
 * 
 *                       RunInlineFunctionCalls
 * 
 **************************************************************/
-import clava.ClavaJoinPoints;
-import clava.ClavaType;
 
-import clava.autopar.AutoParStats;
+let countCallInlinedFunction: number;
 
-var countCallInlinedFunction;
-aspectdef RunInlineFunctionCalls
+interface FunctionData {
+    innerCallNumber: number;
+    CallingFunc: string[];
+}
+
+const func_name: Record<string, FunctionData> = {};
+countCallInlinedFunction = 0;
+
+function applyFunctionCall(): void {
+    for (const $function of Query.search(FileJp)
+        .search(FunctionJp)) {
+
+        if (func_name[$function.name] === undefined){
+            func_name[$function.name] = {
+                innerCallNumber: 0,
+                CallingFunc: []
+            };
+        };     
+    }
+
+    for (const $function of Query.search(FileJp)
+        .search(FunctionJp)) {
     
-        
-    var func_name = {};
-    countCallInlinedFunction = 0;
-    select file.function end
-    apply
-        if (func_name[$function.name] === undefined)
-        {
-            func_name[$function.name] = {};
-            func_name[$function.name].innerCallNumber = 0;
-            func_name[$function.name].CallingFunc = [];
+        let innerCalls = $function.getDescendants("call") as Call[];
+        func_name[$function.name] = { innerCallNumber: innerCalls.length, CallingFunc: [] };
+
+        for(const obj of innerCalls){
+            const callName = obj.name;
+            if (!safefunctionCallslist.includes(callName)) {
+                func_name[$function.name].CallingFunc.push(callName);
+            }
         }
-    end
-
-    select file.function end
-    apply
-        var innerCalls = $function.getDescendants('call');
-
-        func_name[$function.name].innerCallNumber = innerCalls.length;
-        for(var obj of innerCalls)
-            if (safefunctionCallslist.indexOf(obj.name) === -1)
-                func_name[$function.name].CallingFunc.push(obj.name);
-    end
-
-
-
-
-    var flag = false;
-    while(1)
+    }
+    
+    let flag = false;
+    while(true)
     {
         flag = false;
-        for (var caller_func in func_name)
-            for(var calling of func_name[caller_func].CallingFunc)
-                if (calling !== caller_func && func_name[calling] !== undefined )
-                {
-                    for(var func of func_name[calling].CallingFunc)
-                        if (func_name[caller_func].CallingFunc.indexOf(func) ===-1 )
-                        {
+        for (const caller_func in Object.keys(func_name))
+            for(const calling of func_name[caller_func].CallingFunc)
+                if (calling !== caller_func && func_name[calling] !== undefined ){
+                    for(const func of func_name[calling].CallingFunc)
+                        if (!func_name[caller_func].CallingFunc.includes(func)){
                             func_name[caller_func].CallingFunc.push(func);
                             flag = true;
                         }
                 }
 
-        if (flag === false)
-            break;
+        if (!flag) break;
     }
 
-
-    
-    var excluded_function_list = [];
+    let excluded_function_list: string[] = [];
     // check for recursive function calls
-    for (var caller_func in func_name)
-    {
+    for (const callerFunc of Object.keys(func_name)) {
+        if (func_name[callerFunc].CallingFunc.includes(callerFunc) && !excluded_function_list.includes(callerFunc)){
 
-        if (
-            func_name[caller_func].CallingFunc.indexOf(caller_func) !== -1 &&
-            excluded_function_list.indexOf(caller_func) === -1 // not exist
-            )
-            {
-                debug("Excluding from inlining '" + caller_func + "', because it is recursive");
-                excluded_function_list.push(caller_func);
-                AutoParStats.get().incInlineAnalysis(AutoParStats.EXCLUDED_RECURSIVE, caller_func);
-            }
-
-    
+            excluded_function_list.push(callerFunc);
+            AutoParStats.get().incInlineAnalysis(AutoParStats.EXCLUDED_RECURSIVE, callerFunc);
+        }
     }
     
+    for (const $function of Query.search(FileJp)
+        .search(FunctionJp)) {
+    
+        let innerCalls  = $function.getDescendants("call") as Call[];
+        func_name[$function.name] = { innerCallNumber: innerCalls.length, CallingFunc: [] };
 
-    select file.function end
-    apply
-        var innerCalls = $function.getDescendants('call');
+        for (const obj of innerCalls) {
+            const callName = obj.name;
 
-        for(var obj of innerCalls)
-            if (safefunctionCallslist.indexOf(obj.name) === -1 && func_name[obj.name] === undefined  )
-                if (excluded_function_list.indexOf($function.name) === -1) { // not exist
-                    debug("Excluding from inlining '" + caller_func + "', because is not considered safe (func_name[obj.name]: " + func_name[obj.name] + ")");
+            if (!safefunctionCallslist.includes(callName) && func_name[callName] === undefined) {
+                if (!excluded_function_list.includes($function.name)) {
+                    // console.debug(`Excluding from inlining '${function.name}', because it is not considered safe (func_name[callName]: ${func_name[]})`);
                     excluded_function_list.push($function.name);
                     AutoParStats.get().incInlineAnalysis(AutoParStats.EXCLUDED_IS_UNSAFE, $function.name);
                 }
-    end
+            }
+        }
+    }
 
 
     // Exclude functions that have global variable declarations
-    select file.function.body.vardecl end
-    apply
-        /*
-        if($vardecl.isGlobal !== ($vardecl.storageClass === 'static')) {
-            console.log("DIFF!!!");
-            console.log("isGlobal: " + $vardecl.isGlobal);
-            console.log("Storage class: " + $vardecl.storageClass);
-        }
-        */
+    for (const $vardecl of Query.search(FileJp)
+        .search(FunctionJp)
+        .search(Body)
+        .search(Vardecl)){
 
         
         if(!$vardecl.isGlobal) {
-        //if($vardecl.storageClass !== 'static') {		
             continue;
         }
         
-        if (excluded_function_list.indexOf($function.name) === -1) {
-            debug("Excluding from inlining '" + $function.name + "', because it declares at least one global variable ("+$vardecl.name+"@"+$vardecl.location+")");
-            excluded_function_list.push($function.name);
-            AutoParStats.get().incInlineAnalysis(AutoParStats.EXCLUDED_GLOBAL_VAR, $function.name);
+        if (excluded_function_list.indexOf($vardecl.name) === -1) {
+            debug("Excluding from inlining '" + $vardecl.name + "', because it declares at least one global variable ("+$vardecl.name+"@"+$vardecl.location+")");
+            excluded_function_list.push($vardecl.name);
+            AutoParStats.get().incInlineAnalysis(AutoParStats.EXCLUDED_GLOBAL_VAR, $vardecl.name);
         }
-    end
-    //condition $vardecl.storageClass === 'static' end
-    //condition $vardecl.isGlobal end
 
-    /*
-    // Exclude functions that have references to global variables
-    select file.function.body.varref end
-    apply
-        var $vardecl = $varref.declaration;
-        if($vardecl === undefined) {
-            continue;
-        }
-    
-        if(!$vardecl.isGlobal) {
-            continue;
-        }
-    
-        if (excluded_function_list.indexOf($function.name) === -1) {
-            debug("Excluding from inlining '" + $function.name + "', because it has references to global variables");		
-            excluded_function_list.push($function.name);
-        }
-    end
-    */
+        for (const caller_func in Object.keys(func_name))
+            for(const calling of func_name[caller_func].CallingFunc)
+                if (
+                    excluded_function_list.includes(calling)  &&
+                    !excluded_function_list.includes(caller_func)
+                    )
+                    {
+                        debug("Excluding from inlining '" +caller_func + "', because it calls excluded function '"+calling+"'");		
+                        excluded_function_list.push(caller_func);
+                        AutoParStats.get().incInlineAnalysis(AutoParStats.EXCLUDED_CALLS_UNSAFE, caller_func);
+                    }
+                       
+                
+        debug("Functions excluded from inlining: " + excluded_function_list);
+        AutoParStats.get().setInlineExcludedFunctions(excluded_function_list);
 
-    for (var caller_func in func_name)
-        for(var calling of func_name[caller_func].CallingFunc)
-            if (
-                excluded_function_list.indexOf(calling) !== -1 &&
-                excluded_function_list.indexOf(caller_func) === -1
-                )
-                {
-                    debug("Excluding from inlining '" +caller_func + "', because it calls excluded function '"+calling+"'");		
-                    excluded_function_list.push(caller_func);
-                    AutoParStats.get().incInlineAnalysis(AutoParStats.EXCLUDED_CALLS_UNSAFE, caller_func);
-                }
-                
-                
-                
-    debug("Functions excluded from inlining: " + excluded_function_list);
-    AutoParStats.get().setInlineExcludedFunctions(excluded_function_list);
+        let sorted: [string, number][] = [];
 
-    var sorted = [];
-    for (var key in func_name)
-    {
-          sorted.push([ key, func_name[key].innerCallNumber ]);
+        for (const key of Object.keys(func_name)) {
+            sorted.push([key, func_name[key].innerCallNumber]);
+        }
+
+        sorted.sort((obj1, obj2) => obj1[1] - obj2[1]);
+
+        for (const [funcName] of sorted) {
+            if (!excluded_function_list.includes(funcName)) {
+                callInline(funcName);
+            }
+        }
+
     }
-    sorted.sort(function compare(obj1, obj2) {return obj1[1] - obj2[1];});
-
-    for(i in sorted)
-        if (excluded_function_list.indexOf(sorted[i][0]) === -1)
-        {
-            call callInline(sorted[i][0]);
-        }
-end
-
+}
 
 
 /**************************************************************
@@ -176,13 +153,13 @@ end
 *                       callInline
 * 
 **************************************************************/
-aspectdef callInline
-    input func_name end
+function callInline(func_name : string): void {
 
-    select file.function.call end
-    apply
+    for (const $call of Query.search(FileJp)
+        .search(FunctionJp)
+        .search(Call)) {
 
-        var exprStmt = $call.getAstAncestor('ExprStmt');
+        let exprStmt = $call.getAncestor('ExprStmt') as ExprStmt;
 
         if (exprStmt === undefined)
         {
@@ -191,106 +168,105 @@ aspectdef callInline
 
 
         if (
-                    (// funcCall(...)
-                    exprStmt.children[0].joinPointType === 'call' && 
-                    exprStmt.getDescendantsAndSelf('call').length ===1 && 
-                    exprStmt.children[0].name === func_name
-                    ) 
+                (// funcCall(...)
+                exprStmt.children[0].joinPointType === 'call' && 
+                exprStmt.getDescendantsAndSelf('call').length ===1 && 
+                (exprStmt.children[0] as Call).name === func_name
+                ) 
             ||
-                    (// var op funcCall(...)
-                    exprStmt.children[0].joinPointType === 'binaryOp' && 
-                    exprStmt.children[0].right.joinPointType === 'call' && 
-                    exprStmt.children[0].right.getDescendantsAndSelf('call').length === 1
-                    )
+                (// var op funcCall(...)
+                exprStmt.children[0].joinPointType === 'binaryOp' && 
+                (exprStmt.children[0] as BinaryOp).right.joinPointType === 'call' && 
+                (exprStmt.children[0] as BinaryOp).right.getDescendantsAndSelf('call').length === 1
+                )
             )
             {
                 // Count as an inlined call
                 AutoParStats.get().incInlineCalls();
 
-                var o = null;
-                call o : inlinePreparation(func_name, $call, exprStmt);
-                
+                let o  = inlinePreparation(func_name, $call, exprStmt);
 
-                if(o.$newStmts.length > 0)
-                {
-                    var replacedCallStr = '// ClavaInlineFunction : ' + exprStmt.code + '  countCallInlinedFunction : ' + countCallInlinedFunction;
-    
-                    // Insert after to preserve order of comments
-                    var currentStmt = exprStmt.insertAfter(replacedCallStr);				
-                    for(var $newStmt of o.$newStmts)
-                    {
-                        currentStmt = currentStmt.insertAfter($newStmt);
+                if (o !== undefined){
+                    if (o.$newStmts.length > 0) {
+                        let replacedCallStr = `// ClavaInlineFunction : ${exprStmt.code}  countCallInlinedFunction : ${countCallInlinedFunction}`;
+
+                        // Insert after to preserve order of comments
+                        let currentStmt = exprStmt.insertAfter(replacedCallStr);
+                        for (const newStmt of o.$newStmts) {
+                            currentStmt = currentStmt.insertAfter(newStmt);
+                        }
+
+                        exprStmt.detach();
                     }
-
-                    exprStmt.detach();
                 }
             }
-
-    end
-    condition $call.name === func_name && $call.getAstAncestor('ForStmt') !== undefined end
-
-    //call aspec_rebuild;
-end	
-
-
-aspectdef aspec_rebuild
-    select program end
-    apply
+        
+        if ($call.name === func_name && $call.getAncestor("ForStmt") != null) {
+            //call aspec_rebuild;
+        }
+    }
+}
+function aspec_rebuild() : void {
+    // TODO : ONLY 1 PROGRAM. FOR LOOP NOT NEEDED
+    for (const $program of Query.search(Program))
         $program.rebuild();
-    end 
-end
+}
 
 /**************************************************************
 * 
 *                       inlinePreparation
 * 
 **************************************************************/
-aspectdef inlinePreparation
-    input func_name, callStmt, exprStmt end
-    output replacedCallStr, $newStmts end
+interface ReplacedStruct {
+    replacedStr : string;
+    $newStmts : ExprStmt[];
+}
 
-    this.replacedCallStr = '';
+// TODO : Return is ReplacedStruct
+function inlinePreparation(func_name : string, callStmt : Call, exprStmt : ExprStmt) {
+    let replacedCallStr : string = '';
+    let $newStmts = [];
 
-    this.$newStmts = [];	
+    //TODO Ver se estas definicoes estao bem
+    let funcJP = null;
+    let funcJP_backup = null;
+    let funcJPOrginal = null;
+    let funcJPBackupCode : string = "";
+    let funcAstBackup : string = "";
 
-    var funcJP = null;
-    var funcJP_backup = null;
-    select function end
-    apply
-        funcJPOrginal = $function;
+    for (const $function of Query.search(FunctionJp)){
+        if($function.name === func_name && $function.isImplementation){
+            funcJPOrginal = $function;
+            funcJP = $function.clone(`${func_name}_clone`);
+            funcJP_backup = $function.copy();
+            funcJPBackupCode = $function.code;
+            funcAstBackup = $function.ast;
+            break;
+        }
+    }
 
-        funcJP = $function.clone(func_name + '_clone');
-
-        funcJP_backup = $function.copy();
-        funcJP_backupCode = $function.code;
-        funcAst_backup = $function.ast;
-
-        break;
-    end
-    condition $function.name === func_name && $function.hasDefinition === true end
-
-    if (funcJP === null)
-    {
+    if (funcJP === null){
         debug("RunInlineFunctionCalls::inlinePreparation: Could not find the definition of function " + func_name);
-        //funcJP.detach();
         return;
     }
 
-    returnStmtJPs = [];
-    select funcJP.body.stmt end
-    apply
+    let returnStmtJPs : ReturnStmt[] = [];
+
+    for (const $stmt of Query.search(FunctionJp)
+        .search(Body)
+        .search(ReturnStmt)){ // TODO : É possivel search(ReturnStmt)? Em Lara nao
+        
         returnStmtJPs.push($stmt);
-    end
-    condition $stmt.astName === 'ReturnStmt' end
+    }
 
     if (
         funcJP.functionType.returnType.code === 'void'
         &&
-            (
-                returnStmtJPs.length > 1 || 
-                (returnStmtJPs.length === 1 && returnStmtJPs[0].isLast === false )
-            )
+        (
+            returnStmtJPs.length > 1 || 
+            (returnStmtJPs.length === 1 && !returnStmtJPs[0].isLast )
         )
+    )
     {
         funcJP.detach();
         return;
@@ -299,7 +275,7 @@ aspectdef inlinePreparation
     {
         if  (
                 returnStmtJPs.length > 1 || 
-                (returnStmtJPs.length === 1 && returnStmtJPs[0].isLast === false )
+                (returnStmtJPs.length === 1 && !returnStmtJPs[0].isLast )
             )
         {
             funcJP.detach();
@@ -307,7 +283,7 @@ aspectdef inlinePreparation
         }
 
     }
-    
+
     if (funcJP.functionType.returnType.code === 'void' && returnStmtJPs.length === 1)
     {
         returnStmtJPs[0].detach();
@@ -315,183 +291,163 @@ aspectdef inlinePreparation
 
     countCallInlinedFunction = countCallInlinedFunction + 1;
 
-    var param_table = {};
+    let param_table : Record<string, string> = {};
 
-    select funcJP.body.vardecl end
-    apply
+    for (const $vardecl of Query.search(FunctionJp)
+        .search(Body)
+        .search(Vardecl)){
+
         if ($vardecl.qualifiedName !== $vardecl.name)
             continue;
 
-        var newDeclName = $vardecl.qualifiedName + "_" + countCallInlinedFunction;
+        let newDeclName : string = $vardecl.qualifiedName + "_" + countCallInlinedFunction;
         param_table[$vardecl.name] = newDeclName;
         $vardecl.name =  newDeclName;
+    }
 
-    end
-
-
-    select funcJP.body.varref end
-    apply
-        var varrefName = $varref.name;
-        var newVarrefName = updateVarrefName(varrefName, param_table);
+    for (const $varref of Query.search(FunctionJp)
+        .search(Body)
+        .search(Varref)){
+        let varrefName : string = $varref.name;
+        let newVarrefName : string = updateVarrefName(varrefName, param_table);
         if(varrefName !== newVarrefName) {
             $varref.setName(newVarrefName);
         }
-    end
-    
-    select funcJP.body.varref end
-    apply
-        $varref.useExpr.replaceWith($varref);		
-    end
-    condition $varref.vardecl !== undefined && $varref.vardecl.isParam && $varref.kind === 'pointer_access' end
-    
+    }
 
-    var param_index = 0;
+    for (const $varref of Query.search(FunctionJp)
+        .search(Body)
+        .search(Varref)){
+
+        if ($varref.vardecl !== undefined && $varref.vardecl.isParam && $varref.kind === 'pointer_access')
+            $varref.useExpr.replaceWith($varref);		
+
+    }
+
+    let param_index : number = 0;
+    // TODO : Reset param_table?
     param_table = {};
-    select funcJP.param end
-    apply
-        if ($param.type.code.indexOf('void ') !== -1)
-        {
+
+    for (const $param of Query.search(FunctionJp)
+        .search(Param)){
+    
+        if ($param.type.code.indexOf('void ') !== -1){
             funcJP.detach();
             return;			
         }
 
-        if ($param.type.isBuiltin === true)
-        {			
-            var orgparamName = $param.qualifiedName;
+        if ($param.type.isBuiltin){			
+            let orgparamName : string = $param.qualifiedName;
             param_table[$param.name] = $param.qualifiedName + "_" + countCallInlinedFunction;			
             $param.name = param_table[$param.name];
 
-            $newVardecl = ClavaJoinPoints.varDecl($param.name, callStmt.argList[param_index].copy());
+            let $newVardecl = ClavaJoinPoints.varDecl($param.name, callStmt.argList[param_index].copy());
 
             funcJP.body.insertBegin($newVardecl);			
         }
         
-        else if ($param.type.isArray === true)
-        {
-            if (callStmt.argList[param_index].joinPointType === 'unaryOp')
-            {
+        else if ($param.type.isArray === true){
+            if (callStmt.argList[param_index].joinPointType === 'unaryOp'){
                 funcJP.detach();
                 return;
-
-                var arrayVarObj = callStmt.argList[param_index].getDescendantsAndSelf('arrayAccess')[0];
+                // TODO : what is this return?
+                var arrayVarObj = callStmt.argList[param_index].getDescendantsAndSelf('arrayAccess')[0] as ArrayAccess;
 
                 param_table[$param.name] = arrayVarObj.arrayVar.code;
-                for(var index = 0 ; index < arrayVarObj.subscript.length - ($param.code.split('[').length-1) ; index++)
-                {
+                for(var index = 0 ; index < arrayVarObj.subscript.length - ($param.code.split('[').length-1) ; index++){
                     param_table[$param.name] += '[' + arrayVarObj.subscript[index].code +']';
                 }				
             }
-            else if (callStmt.argList[param_index].joinPointType === 'cast')
-            {
+            else if (callStmt.argList[param_index].joinPointType === 'cast'){
 
-                if (callStmt.argList[param_index].vardecl.type.unwrap.code !== callStmt.argList[param_index].type.unwrap.code)
-                {
+                if (callStmt.argList[param_index].vardecl.type.unwrap.code !== callStmt.argList[param_index].type.unwrap.code){
                     funcJP.detach();
                     return;
                 }
 
-                param_table[$param.name] = callStmt.argList[param_index].subExpr.code;				
+                param_table[$param.name] = (callStmt.argList[param_index] as Cast).subExpr.code;				
             }
-            else
-            {
+            else{
                 param_table[$param.name] = callStmt.argList[param_index].code;
             }
             $param.name = param_table[$param.name];
         }
-        else if ($param.type.isPointer === true)
-        {
-            param_table[$param.name] = callStmt.argList[param_index].code.allReplace({'&':''});
+        else if ($param.type.isPointer){
+            param_table[$param.name] = allReplace(callStmt.argList[param_index].code, ({'&':''}));
             $param.name =  param_table[$param.name];
-
         }
         param_index = param_index + 1;
-    end
 
+    }
+
+    for (const $varref of Query.search(FunctionJp)
+        .search(Body)
+        .search(Varref)){
+        
+        if (param_table[$varref.name] !== undefined && $varref.vardecl.isParam)
+            $varref.setName(param_table[$varref.name]);
+    }
     
-    select funcJP.body.varref end
-    apply
+    for (const $vardecl of Query.search(FunctionJp)
+        .search(Body)
+        .search(Vardecl)){
 
-        if (param_table[$varref.name] !== undefined)
-        $varref.setName(param_table[$varref.name]);
-    end
-    condition $varref.vardecl.isParam === true  end	
-    
-    select funcJP.body.vardecl end
-    apply        
-        var varrefs = [];
-        var $typeCopy = ClavaType.getVarrefsInTypeCopy($vardecl.type, varrefs);
+        let varrefs : Varref[] = [];
+        let $typeCopy : Type = ClavaType.getVarrefsInTypeCopy($vardecl.type, varrefs);
 
-        for(var $varref of varrefs)
+        for(const $varref of varrefs)
         {
             $varref.name = param_table[$varref.name];
         }
                 
         $vardecl.type = $typeCopy;
-    end
-    
-
-
-    if (exprStmt.children[0].joinPointType === 'binaryOp')
-    {
-        var ret_str_replacement = exprStmt.children[0].children[0].code;
-
-        if (exprStmt.children[0].kind === 'assign')
-            ret_str_replacement += ' = ';
-        else if (exprStmt.children[0].kind === 'add_assign')
-            ret_str_replacement += ' += ';
-        else if (exprStmt.children[0].kind === 'sub_assign')
-            ret_str_replacement += ' -= ';
-        else if (exprStmt.children[0].kind === 'mul_assign')
-            ret_str_replacement += ' *= ';
-//		else	
-//			throw "Not implemented for kind " + exprStmt.children[0].kind;
-
-        //retJPs = funcJP.body.stmts.filter(function(obj){if (obj.astName === 'ReturnStmt') {return obj;}});
-        retJPs = funcJP.body.allStmts.filter(function(obj){if (obj.astName === 'ReturnStmt') {return obj;}});		
-        
-        for(retJP of retJPs)
-        {
-            //console.log("ret_str_repl: " + ret_str_replacement);
-            //console.log("retJP original: " + retJP.code);
-            //console.log("retJP after: " + ret_str_replacement + retJP.children[0].code + ';');
-            //console.log("retJp child: " + retJP.children[0]);
-            //retJP.insert replace ret_str_replacement + retJP.children[0].code + ';';
-            
-            // Copy binary operation stmt
-            var exprStmtCopy = exprStmt.copy();
-            var binaryOpCopy = exprStmtCopy.children[0];
-            // Replace right hand with return expression
-            binaryOpCopy.right = retJP.children[0];
-
-            //console.log("PREVIOUS CODE: " + ret_str_replacement + retJP.children[0].code + ';');
-            //console.log("CURRENT CODE: " + exprStmtCopy.code);
-            // Replace return with copy of expr stmt
-            retJP.replaceWith(exprStmtCopy);
-        }
-
     }
 
-    select funcJP.body.comment end
-    apply
+    if (exprStmt.children[0].joinPointType === 'binaryOp'){
+        let retJPs : Statement[] = funcJP.body.allStmts.filter(function(obj){if (obj.astName === 'ReturnStmt') {return obj;}});		
+        
+        for(const retJP of retJPs){
+            // Copy binary operation stmt
+            let exprStmtCopy = exprStmt.copy() as ExprStmt;
+            let binaryOpCopy = exprStmtCopy.children[0] as BinaryOp;
+            // Replace right hand with return expression
+            binaryOpCopy.right = retJP.children[0] as Expression;
+
+            retJP.replaceWith(exprStmtCopy);
+        }
+    }
+
+    for (const $comment of Query.search(FunctionJp)
+        .search(Body)
+        .search(Comment)){
+        
         $comment.detach();
-    end
+    }
 
-    //var changedReplacedCall = false;
-    select funcJP.body.childStmt end
-    apply
-        this.$newStmts.push($childStmt.copy());
-        this.replacedCallStr += $childStmt.code + '\n';
-        //changedReplacedCall = true;
-        //console.log("ADDING: " + $childStmt.code);
-    end
+    for (const $childStmt of Query.search(FunctionJp)
+        .search(Body)
+        .search(Statement)){ 
+        // TODO : Should be .search(ChildStmt) instead of Statement?
+        // select funcJP.body.childStmt end
+        // apply
+        //     this.$newStmts.push($childStmt.copy());
+        //     this.replacedCallStr += $childStmt.code + '\n';
 
-    this.replacedCallStr = this.replacedCallStr.allReplace({' const ':' '});
+        $newStmts.push($childStmt.copy());
+        replacedCallStr += $childStmt.code + '\n';
+        
+    }
+    replacedCallStr = allReplace(replacedCallStr, {' const ':' '});
 
     funcJP.detach();
-end	
+
+    // TODO : How to return 2 values ?
+    return {replacedCallStr, $newStmts}
+
+}
 
 
-function updateVarrefName(varrefName, param_table) {
+function updateVarrefName(varrefName : string, param_table : Record<string, string>) : string {
         
         // If name is present in the table, return table value
         if (param_table[varrefName] !== undefined) {
@@ -501,12 +457,12 @@ function updateVarrefName(varrefName, param_table) {
         // If name has a square bracket, it means it is array access
         // Update the name of the array, and the contents of each subscript
         
-        var bracketIndex = varrefName.indexOf("[");
+        let bracketIndex : number = varrefName.indexOf("[");
         if(bracketIndex != -1) {
-            var accessName = varrefName.substring(0, bracketIndex);
-            var newAccessName = updateVarrefName(accessName, param_table);
-            var suffix = varrefName.substring(bracketIndex);
-            var updatedSuffix = updateSubscripts(suffix, param_table);
+            let accessName : string = varrefName.substring(0, bracketIndex);
+            let newAccessName : string = updateVarrefName(accessName, param_table);
+            let suffix : string = varrefName.substring(bracketIndex);
+            let updatedSuffix : string = updateSubscripts(suffix, param_table);
             
             return newAccessName + updatedSuffix;
         }
@@ -516,37 +472,32 @@ function updateVarrefName(varrefName, param_table) {
         return varrefName;
 }
 
-function updateSubscripts(subscripts, param_table) {
-    //console.log("Original subscripts: '" + subscripts + "'");
+function updateSubscripts(subscripts : string, param_table : Record<string, string>) {
+    // TODO : Not sure how this works
+    const idRegex = /[a-zA-Z_][a-zA-Z_0-9]*/g;
+    let match = idRegex['exec'](subscripts);
 
-    var idRegex = /[a-zA-Z_][a-zA-Z_0-9]*/g;
-    var match = idRegex['exec'](subscripts);
+    let startIndex = 0;
+    let updatedSubscripts = "";
 
-    var startIndex = 0;
-    var updatedSubscripts = "";
     while (match != null) {
         // matched text: match[0]
         // match start: match.index
         // capturing group n: match[n]
-        var matched = match[0];
-        var matchedIndex = match.index;
-        //console.log(matched);
-        //console.log(matchedIndex);
+        let matched = match[0];
+        let matchedIndex = match.index;
         match = idRegex['exec'](subscripts);
             
-        var newMatched = updateVarrefName(matched, param_table);
+        let newMatched = updateVarrefName(matched, param_table);
         
         updatedSubscripts += subscripts.substring(startIndex, matchedIndex);
         updatedSubscripts += newMatched;
         
         startIndex = matchedIndex + matched.length;
-        
-        //console.log("Current String: '" + updatedSubscripts + "'");
-    }
+        }
     
     // Complete string
-    updatedSubscripts += subscripts.substring(startIndex, subscripts.length);
-    //console.log("Updated subscripts: '" + updatedSubscripts + "'");
+    updatedSubscripts += subscripts.substring(startIndex);
     
     return updatedSubscripts;
 }

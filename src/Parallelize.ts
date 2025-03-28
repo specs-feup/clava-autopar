@@ -1,60 +1,61 @@
-import clava.autopar.InlineFunctionCalls;
-import clava.autopar.RemoveNakedloops;
-import clava.autopar.NormalizedBinaryOp;
-import clava.autopar.ParallelizeLoop;
-import clava.autopar.AddPragmaLoopIndex;
-import clava.autopar.RunInlineFunctionCalls;
-import clava.autopar.LoopInductionVariables;
-import clava.autopar.CheckForSafeFunctionCall;
-import clava.autopar.AutoParStats;
 
-import clava.Clava;
-import clava.util.CodeInserter;    
-import lara.Io;
+import InlineFunctionCalls from "./InlineFunctionCalls.js";
+import RemoveNakedloops from "./RemoveNakedloops.js";
+import NormalizedBinaryOp from "./NormalizedBinaryOp.js";
+import ParallelizeLoop from "./ParallelizeLoop.js";
+import RunInlineFunctionCalls from "./RunInlineFunctionCalls.js";
+import LoopInductionVariables from "./LoopInductionVariables.js";
+import CheckForSafeFunctionCall from "./CheckForSafeFunctionCall.js";
+import AutoParStats from "./AutoParStats.js";
 
-import weaver.Query;
+import { Body, Call, FileJp, FunctionJp, Loop, Omp } from "@specs-feup/clava/api/Joinpoints.js";
+import Clava from "@specs-feup/clava/api/clava/Clava.js";
+import CodeInserter from "@specs-feup/clava/api/clava/util/CodeInserter.js";
+import Io from "@specs-feup/lara/api/lara/Io.js";
+import Query from "@specs-feup/lara/api/weaver/Query.js";
+import { JavaClasses } from "@specs-feup/lara/api/lara/util/JavaTypes.js";
+import JoinPoints from "@specs-feup/lara/api/weaver/JoinPoints.js";
+
 
 /**
  * Utility methods for parallelization.
  *
  * @class
  */
-var Parallelize = {};
+
 var OmpPragmas = {};
 
-/**
- * @param $loops {$loop[]} an array of for loops to attempt to parallelize. If undefined, tries to parallelize all for loops in the program.
- */
-Parallelize.forLoops = function($loops) {
 
-    //var parallelLoops = Parallelize.getForLoopsPragmas($loops);
-    var autoparResult = Parallelize.getForLoopsPragmas($loops, true);
-    var parallelLoops = autoparResult["parallelLoops"];
-    var unparallelizableLoops = autoparResult["unparallelizableLoops"];
+export class Parallelize{
 
-    // Add pragmas to loops
-    /*
-    for(var $loop of $loops) {
-        var ompPragma = parallelLoops[$loop.astId];
-        if(ompPragma === undefined) {
-            console.log("Could not parallelize loop@"+$loop.location);
-            //console.log("Could not parallelize loop@"+$loop.location+":\n -> " + unparallelizableLoops[$loop.astId]);
-            continue;
-        }
+    static forLoops($loops : Loop[]) {
+        var autoparResult = Parallelize.getForLoopsPragmas($loops, true);
+        var parallelLoops = autoparResult["parallelLoops"];
+        var unparallelizableLoops = autoparResult["unparallelizableLoops"]; 
 
-        $loop.insertBefore(ompPragma);
-        
-        // Add include
-        $loop.getAncestor("file").addInclude("omp.h",true);
+        console.log('Parallelization finished');
     }
-    */
-    
-    console.log('Parallelization finished');    
+
+
 }
+
+// /**
+//  * @param $loops {$loop[]} an array of for loops to attempt to parallelize. If undefined, tries to parallelize all for loops in the program.
+//  */
+// Parallelize.forLoops = function($loops) {
+
+    
+//     var autoparResult = Parallelize.getForLoopsPragmas($loops, true);
+//     var parallelLoops = autoparResult["parallelLoops"];
+//     var unparallelizableLoops = autoparResult["unparallelizableLoops"];
+    
+//     console.log('Parallelization finished');    
+// }
 
 /**
  *
  */
+
 Parallelize.forLoopsAsText = function($loops, outputFolder) {
 
     if(outputFolder === undefined) {
@@ -68,7 +69,7 @@ Parallelize.forLoopsAsText = function($loops, outputFolder) {
     var codeInserter = new CodeInserter();
     var filesWithPragmas = {};
     
-    // Add pragmas to loops
+    Add pragmas to loops
     for(var $loop of $loops) 
     {
         var ompPragma = parallelLoops[$loop.astId];

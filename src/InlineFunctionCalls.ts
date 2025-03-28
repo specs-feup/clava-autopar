@@ -3,62 +3,59 @@
 *                       InlineFunctionCalls
 * 
 **************************************************************/
-aspectdef InlineFunctionCalls
 
-    var func_name = {};
+import Query from "@specs-feup/lara/api/weaver/Query.js";
+import { Call, FileJp, FunctionJp, Loop, Omp } from "@specs-feup/clava/api/Joinpoints.js";
 
-    select file.function end
-    apply
-        if (func_name[$function.name] === undefined)
-        {
-            func_name[$function.name] = {};
+interface FunctionData{
+    innerCallNumber: number;
+    CallingFunc : string[];
+}
+
+const func_name: Record<string, FunctionData> = {};
+
+export default function InlineFunctionCalls() {
+
+    for (const $function of Query.search(FileJp).search(FunctionJp)) {
+        if (func_name[$function.name] === undefined) {
+            func_name[$function.name] = {
+                innerCallNumber: 0,
+                CallingFunc: []
+            };
             func_name[$function.name].innerCallNumber = 0;
         }
-    end
-
-    select file.function end
-    apply
-        var innerCalls = $function.getDescendants('call');
-        func_name[$function.name].innerCallNumber = innerCalls.length;
-    end
-
-
-    var sorted = [];
-    for (var key in func_name)
-    {
-          sorted.push([ key, func_name[key].innerCallNumber ]);
     }
-    sorted.sort(function compare(obj1, obj2) {return obj1[1] - obj2[1];});
 
+    for (const $function of Query.search(FileJp).search(FunctionJp)) {
+        const innerCalls = $function.getDescendants('call') as Call[];
+        func_name[$function.name].innerCallNumber = innerCalls.length;
+    }
 
-    for(i in sorted)
-    {
-        call inlineFunction(sorted[i][0]);
-    }	
+    let sorted : [string, number][] = [];
+    for (const key in func_name) {
+        sorted.push([key, func_name[key].innerCallNumber]);
+    }
 
+    sorted.sort((obj1, obj2) => obj1[1] - obj2[1]);
 
-
-    return;
-end
+    for (const i of sorted) {
+        inlineFunction(i[0]);
+    }
+}
 
 /**************************************************************
 * 
 *                       inlineFunction
 * 
 **************************************************************/
-aspectdef inlineFunction
-    input funcname end
 
-    select file.function.loop.call end
-    apply
-            if (
-                $call.getAstAncestor('ForStmt') === undefined ||  
-                $call.getAstAncestor('ForStmt').rank.join('_') === $loop.rank.join('_')
-                )
-            {
-                $call.exec inline;
+export function inlineFunction(funcname: string) {
+    for (const $call of Query.search(FileJp).search(Call)) {
+        if ($call.name === funcname) {
+            const loop = $call.getAncestor('loop') as Loop;
+            if (loop === undefined || loop.rank.join('_') === ($call.getAncestor('loop') as Loop).rank.join('_')) {
+                $call.inline();
             }
-
-    end
-    condition $call.name === funcname end
-end
+        }
+    }
+}

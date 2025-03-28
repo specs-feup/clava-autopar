@@ -2,6 +2,7 @@ import Clava from "@specs-feup/clava/api/clava/Clava.js";
 import CodeInserter from "@specs-feup/clava/api/clava/util/CodeInserter.js";
 import Io from "@specs-feup/lara/api/lara/Io.js";
 import Query from "@specs-feup/lara/api/weaver/Query.js";
+import { safefunctionCallslist } from "./SafeFunctionCalls.js";
 import {
   Loop,
   Joinpoint,
@@ -67,7 +68,7 @@ for (const $function of Query.search(FileJp).search(FunctionJp).search(Body).sea
 
   for (const $function of Query.search(FileJp).search(FunctionJp).search(Body).search(MemberAccess)) {
   if (new_safefunctionCallslist.indexOf($function.name) != -1) {
-    if ($varref.use.indexOf("write") == -1) {
+    if ($memberAccess.use.indexOf("write") == -1) {
       continue;
     }
 
@@ -76,8 +77,7 @@ for (const $function of Query.search(FileJp).search(FunctionJp).search(Body).sea
     ).vardecl.currentRegion;
     if (currentRegion !== undefined && currentRegion.joinPointType === "file") {
       new_safefunctionCallslist.splice(
-        new_safefunctionCallslist.indexOf($function.name),
-        1
+        new_safefunctionCallslist.indexOf($function.name),1
       );
     }
   }
@@ -104,9 +104,9 @@ for (const $function of Query.search(FileJp)) {
     "//new_safefunctionCallslist : " + new_safefunctionCallslist.join(" , ")
   ); 
 }
-
+//erro aqui por ser const
   if (new_safefunctionCallslist.length > 0)
-    new_safefunctionCallslist = new_safefunctionCallslist.concat(
+    safefunctionCallslist = safefunctionCallslist.concat(
       new_safefunctionCallslist
     );
 }

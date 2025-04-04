@@ -22,7 +22,6 @@ export default function InlineFunctionCalls() {
                 innerCallNumber: 0,
                 CallingFunc: []
             };
-            func_name[$function.name].innerCallNumber = 0;
         }
     }
 
@@ -50,7 +49,7 @@ export default function InlineFunctionCalls() {
 **************************************************************/
 
 export function inlineFunction(funcname: string) {
-    for (const $call of Query.search(FileJp).search(Call)) {
+    for (const $call of Query.search(FileJp).search(FunctionJp).search(Loop).search(Call)) {
         if ($call.name === funcname) {
             const loop = $call.getAncestor('loop') as Loop;
             if (loop === undefined || loop.rank.join('_') === ($call.getAncestor('loop') as Loop).rank.join('_')) {

@@ -106,7 +106,8 @@ for (const $function of Query.search(FileJp)) {
 }
 //erro aqui por ser const
   if (new_safefunctionCallslist.length > 0)
-    safefunctionCallslist = safefunctionCallslist.concat(
-      new_safefunctionCallslist
+    safefunctionCallslist.push(
+      ...new_safefunctionCallslist
     );
 }
+

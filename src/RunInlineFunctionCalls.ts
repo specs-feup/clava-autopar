@@ -40,7 +40,7 @@ interface FunctionData {
 const func_name: Record<string, FunctionData> = {};
 countCallInlinedFunction = 0;
 
-function applyFunctionCall(): void {
+export default function RunInlineFunctionCalls(): void {
     for (const $function of Query.search(FileJp).search(FunctionJp)) {
         if (func_name[$function.name] === undefined) {
             func_name[$function.name] = {

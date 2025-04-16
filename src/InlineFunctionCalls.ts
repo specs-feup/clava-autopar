@@ -17,19 +17,15 @@ const func_name: Record<string, FunctionData> = {};
 export default function InlineFunctionCalls() {
 
     for (const $function of Query.search(FileJp).search(FunctionJp)) {
+        const innerCalls = $function.getDescendants("call") as Call[];
         if (func_name[$function.name] === undefined) {
             func_name[$function.name] = {
-                innerCallNumber: 0,
-                CallingFunc: []
+                innerCallNumber: innerCalls.length,
+                CallingFunc: [],
             };
         }
     }
-
-    for (const $function of Query.search(FileJp).search(FunctionJp)) {
-        const innerCalls = $function.getDescendants('call') as Call[];
-        func_name[$function.name].innerCallNumber = innerCalls.length;
-    }
-
+    
     let sorted : [string, number][] = [];
     for (const key in func_name) {
         sorted.push([key, func_name[key].innerCallNumber]);
@@ -44,13 +40,24 @@ export default function InlineFunctionCalls() {
 
 /**************************************************************
 * 
-    for (const chain of Query.search(FileJp).search(FunctionJp).search(Loop).search(Call).chain()) {
+*                       inlineFunction
+* 
+**************************************************************/
+
+export function inlineFunction(funcname: string) {
+    for (const chain of Query.search(FileJp)
+        .search(FunctionJp)
+        .search(Loop)
+        .search(Call)
+        .chain()) {
         const $call = chain["call"] as Call;
         const $loop = chain["loop"] as Loop;
-
         if ($call.name === funcname) {
-            const ancestorLoop = $call.getAncestor('loop') as Loop;
-            if (ancestorLoop === undefined || ancestorLoop.rank.join('_') === $loop.rank.join('_')) {
+            const ancestorLoop = $call.getAncestor("loop") as Loop;
+            if (
+                ancestorLoop === undefined ||
+                ancestorLoop.rank.join("_") === $loop.rank.join("_")
+            ) {
                 $call.inline();
             }
         }

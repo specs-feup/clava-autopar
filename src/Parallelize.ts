@@ -26,9 +26,7 @@ interface OmpPragma {
     pragmaCode: string;
 }
 
-export const OmpPragmas : Record<string, OmpPragma> = {};
-
-
+export const OmpPragmas: Record<string, OmpPragma> = {};
 
 export default class Parallelize {
     static forLoops($loops: Loop[]) {
@@ -39,9 +37,8 @@ export default class Parallelize {
 
     static forLoopsAsText(
         $loops: Loop[],
-        outputFolder: JavaClasses.File = (Io.getPath("./"))
+        outputFolder: JavaClasses.File = Io.getPath("./")
     ) {
-
         let autoparResult = Parallelize.getForLoopsPragmas($loops, true);
         let parallelLoops = autoparResult["parallelLoops"];
 
@@ -72,13 +69,11 @@ export default class Parallelize {
         }
 
         // Add includes to files that have pragmas
-        for (const $file in filesWithPragmas) {
-            const $fileJp = Query.search(FileJp, $file).getFirst();
-            if ($fileJp === undefined){
-                throw new Error;
+        for (const $fileJp of filesWithPragmas) {
+            if ($fileJp === undefined) {
+                throw new Error();
             }
             codeInserter.add($fileJp, 1, "#include <omp.h>");
-
         }
 
         codeInserter.write(outputFolder.getAbsolutePath());
@@ -226,9 +221,9 @@ export default class Parallelize {
 
         let $ancestor = $loop.parent;
         while ($ancestor !== undefined) {
-            if ($ancestor.instanceOf("loop")) {
+            if ($ancestor instanceof Loop) {
                 for (const $pragma of $ancestor.pragmas) {
-                    if ($pragma.instanceOf("omp")) {
+                    if ($pragma instanceof Omp) {
                         return true;
                     }
                 }

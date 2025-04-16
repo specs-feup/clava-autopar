@@ -44,15 +44,13 @@ export default function InlineFunctionCalls() {
 
 /**************************************************************
 * 
-*                       inlineFunction
-* 
-**************************************************************/
+    for (const chain of Query.search(FileJp).search(FunctionJp).search(Loop).search(Call).chain()) {
+        const $call = chain["call"] as Call;
+        const $loop = chain["loop"] as Loop;
 
-export function inlineFunction(funcname: string) {
-    for (const $call of Query.search(FileJp).search(FunctionJp).search(Loop).search(Call)) {
         if ($call.name === funcname) {
-            const loop = $call.getAncestor('loop') as Loop;
-            if (loop === undefined || loop.rank.join('_') === ($call.getAncestor('loop') as Loop).rank.join('_')) {
+            const ancestorLoop = $call.getAncestor('loop') as Loop;
+            if (ancestorLoop === undefined || ancestorLoop.rank.join('_') === $loop.rank.join('_')) {
                 $call.inline();
             }
         }

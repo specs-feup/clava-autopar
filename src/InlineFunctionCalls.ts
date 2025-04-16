@@ -25,7 +25,7 @@ export default function InlineFunctionCalls() {
             };
         }
     }
-    
+
     let sorted : [string, number][] = [];
     for (const key in func_name) {
         sorted.push([key, func_name[key].innerCallNumber]);

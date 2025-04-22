@@ -1,6 +1,7 @@
 import { FunctionJp, Loop } from "@specs-feup/clava/api/Joinpoints.js";
 import { LoopOmpAttributes } from "./checkForOpenMPCanonicalForm.js";
 import GetLoopIndex from "./GetLoopIndex.js";
+import { OmpPragmas } from "./Parallelize.js";
 
 /**************************************************************
 /**************************************************************
@@ -91,9 +92,9 @@ export default function AddOpenMPDirectivesForLoop($ForStmt: Loop) {
             {
                 if 	(OmpPragmas[loopindex_org] === undefined)
                 {
-                    OmpPragmas[loopindex_org] = {};
-                    
-                    OmpPragmas[loopindex_org].pragmaCode = InsertBeforeStr;
+                    OmpPragmas[loopindex_org] = {
+                        pragmaCode : InsertBeforeStr
+                    };
                 }
                 else
                 {

@@ -223,7 +223,7 @@ function callInline(func_name: string): void {
             // Count as an inlined call
             AutoParStats.get().incInlineCalls();
 
-            let o = inlinePreparation(func_name, $call, exprStmt);
+            const o = inlinePreparation(func_name, $call, exprStmt);
 
             if (o !== undefined) {
                 if (o.$newStmts.length > 0) {

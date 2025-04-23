@@ -227,7 +227,7 @@ function callInline(func_name: string): void {
 
             if (o !== undefined) {
                 if (o.$newStmts.length > 0) {
-                    let replacedCallStr = `// ClavaInlineFunction : ${exprStmt.code}  countCallInlinedFunction : ${countCallInlinedFunction}`;
+                    const replacedCallStr = `// ClavaInlineFunction : ${exprStmt.code}  countCallInlinedFunction : ${countCallInlinedFunction}`;
 
                     // Insert after to preserve order of comments
                     let currentStmt = exprStmt.insertAfter(replacedCallStr);

@@ -70,14 +70,23 @@ jobs:
                   echo '{ "name": "SPeCS Workspace", "type": "module", "workspaces": [ "clava-autopar" ] }' > package.json
                   npm install
 
+            - name: Lint TS Sources
+              id: lint
+              run: |
+                  cd clava-autopar
+                  npm run lint
+
             - name: Build Project
-              # TODO: Remove continue-on-error when build is stable
-              continue-on-error: true
+              id: build
+              # TODO: Remove 'if' when existing linter errors are removed
+              if: ${{ success() || (failure() && steps.lint.outcome == 'failure') }}
               run: |
                   cd clava-autopar
                   npm run build
 
             - name: Test
+              # TODO: Remove 'if' when build is stable
+              if: ${{ success() || ( failure() && (steps.lint.outcome == 'failure' || steps.build.outcome == 'failure')) }}
               run: |
                   cmake -DLOCAL_CLAVA:STRING="npx clava classic" specs-lara/ANTAREX/AutoPar
                   make

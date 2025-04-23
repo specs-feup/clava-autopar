@@ -1,328 +1,389 @@
 /**************************************************************
-* 
-*                       BuildPetitFileInput
-* 
-**************************************************************/
-import clava.autopar.get_varTypeAccess;
+ *
+ *                       BuildPetitFileInput
+ *
+ **************************************************************/
 
-aspectdef BuildPetitFileInput
-    input $ForStmt end
+import {BinaryOp,Cast,Loop,Statement,UnaryOp,Vardecl,Joinpoint,Varref} from "@specs-feup/clava/api/Joinpoints.js";
+import { LoopOmpAttributes } from "./checkForOpenMPCanonicalForm.js";
+import GetLoopIndex from "./GetLoopIndex.js";
+import SearchStruct from "./SearchStruct.js";
+import Query from "@specs-feup/lara/api/weaver/Query.js";
 
-    var replace_vars = [];
-    var loopindex = GetLoopIndex($ForStmt);
+export default function BuildPetitFileInput($ForStmt: Loop) {
+    let replace_vars: string[] = [];
+    const loopindex: string = GetLoopIndex($ForStmt);
 
-    if (LoopOmpAttributes[loopindex].msgError.length !== 0)
-        return;
+    if (LoopOmpAttributes[loopindex].msgError.length !== 0) return;
 
     LoopOmpAttributes[loopindex].ForStmtToPetit = [];
     LoopOmpAttributes[loopindex].petit_variables = [];
     LoopOmpAttributes[loopindex].petit_arrays = {};
     LoopOmpAttributes[loopindex].petit_loop_indices = [];
 
-    LoopOmpAttributes[loopindex].petit_variables.push('petit_tmp');
+    LoopOmpAttributes[loopindex].petit_variables.push("petit_tmp");
 
-    var varreflist = SearchStruct(LoopOmpAttributes[loopindex].varAccess, {varTypeAccess : 'varref'});
-    for(var i = 0; i < varreflist.length; i++)
-    {	
+    const varreflist = SearchStruct(LoopOmpAttributes[loopindex].varAccess, {
+        varTypeAccess: "varref",
+    });
+    for (let i = 0; i < varreflist.length; i++) {
         LoopOmpAttributes[loopindex].petit_variables.push(varreflist[i].name);
-        if (varreflist[i].name[0] === '_')
+        if (varreflist[i].name[0] === "_")
             replace_vars.push(varreflist[i].name);
     }
-    var loopsControlVarname = [];
+    let loopsControlVarname = [];
     loopsControlVarname.push(LoopOmpAttributes[loopindex].loopControlVarname);
-    if (LoopOmpAttributes[loopindex].innerloopsControlVarname !== undefined )
-        loopsControlVarname = loopsControlVarname.concat(LoopOmpAttributes[loopindex].innerloopsControlVarname);
-    for(var i = 0; i < loopsControlVarname.length; i++)
-        LoopOmpAttributes[loopindex].petit_loop_indices.push(loopsControlVarname[i]);
+    if (LoopOmpAttributes[loopindex].innerloopsControlVarname !== undefined)
+        loopsControlVarname = loopsControlVarname.concat(
+            LoopOmpAttributes[loopindex].innerloopsControlVarname
+        );
+    for (let i = 0; i < loopsControlVarname.length; i++)
+        LoopOmpAttributes[loopindex].petit_loop_indices.push(
+            loopsControlVarname[i]
+        );
 
+    const $cloneJPForStmt = $ForStmt.copy();
 
+    let tabOP: string[] = [];
 
-    var $cloneJPForStmt = $ForStmt.copy();
+    let loopPetitForm = CovertLoopToPetitForm($ForStmt, tabOP);
+    LoopOmpAttributes[loopindex].ForStmtToPetit.push({
+        line: LoopOmpAttributes[loopindex].start,
+        str: loopPetitForm,
+    });
+    LoopOmpAttributes[loopindex].ForStmtToPetit.push({
+        line: LoopOmpAttributes[loopindex].end,
+        str: tabOP.join("") + "endfor",
+    });
 
-    var tabOP = [];
-
-    call o : CovertLoopToPetitForm($ForStmt, tabOP);
-    LoopOmpAttributes[loopindex].ForStmtToPetit.push({line: LoopOmpAttributes[loopindex].start, str : o.loopPetitForm});
-    LoopOmpAttributes[loopindex].ForStmtToPetit.push({line: LoopOmpAttributes[loopindex].end, str : tabOP.join('')  + 'endfor'});
-    
-    select $ForStmt.body.loop end
-    apply
-        var innerloopindex = GetLoopIndex($loop);
+    // select $ForStmt.body.loop end
+    // apply
+    for (const $loop of Query.searchFrom($ForStmt.body, Loop, {
+        astName: "forStmt",
+    })) {
+        const innerloopindex: string = GetLoopIndex($loop);
 
         tabOP = [];
-        for(var i = 0; i < $loop.rank.length-1; i++)
-            tabOP.push('\t');
+        for (let i = 0; i < $loop.rank.length - 1; i++) tabOP.push("\t");
 
-        call o : CovertLoopToPetitForm($loop, tabOP);
-        LoopOmpAttributes[loopindex].ForStmtToPetit.push({line: LoopOmpAttributes[innerloopindex].start, str : o.loopPetitForm});
-        LoopOmpAttributes[loopindex].ForStmtToPetit.push({line: LoopOmpAttributes[innerloopindex].end, str : tabOP.join('') + 'endfor'});
-    end
-    condition $loop.astName === 'ForStmt' end
+        loopPetitForm = CovertLoopToPetitForm($loop, tabOP);
+        LoopOmpAttributes[loopindex].ForStmtToPetit.push({
+            line: LoopOmpAttributes[innerloopindex].start,
+            str: loopPetitForm,
+        });
+        LoopOmpAttributes[loopindex].ForStmtToPetit.push({
+            line: LoopOmpAttributes[innerloopindex].end,
+            str: tabOP.join("") + "endfor",
+        });
+    }
 
-    var candidateArraylist = SearchStruct(LoopOmpAttributes[loopindex].varAccess, {usedInClause : false, hasDescendantOfArrayAccess : true});
+    const candidateArraylist = SearchStruct(
+        LoopOmpAttributes[loopindex].varAccess,
+        { usedInClause: false, hasDescendantOfArrayAccess: true }
+    );
+    let oder = 0;
+    for (const element of candidateArraylist) {
+        const varObj = element;
 
-    var oder = 0;
-    for(var i = 0; i < candidateArraylist.length; i++)
-    {
-        var varObj = candidateArraylist[i];
-        
-        if ( varObj.use.indexOf('W') === -1 || varObj.sendtoPetit === false)			
+        if (varObj.use.indexOf("W") === -1 || varObj.sendtoPetit === false)
             continue;
-        
-        for(var j = 0; j < varObj.varUsage.length; j++)
-            if (varObj.varUsage[j].isInsideLoopHeader === false)
-            {
 
-                var tabOP = Array(varObj.varUsage[j].parentlooprank.length).join('\t');
-                if (varObj.varUsage[j].use === 'R')
-                {
+        for (let j = 0; j < varObj.varUsage.length; j++)
+            if (varObj.varUsage[j].isInsideLoopHeader === false) {
+                tabOP = Array(varObj.varUsage[j].parentlooprank.length).join(
+                    "\t"
+                );
+                if (varObj.varUsage[j].use === "R") {
                     LoopOmpAttributes[loopindex].ForStmtToPetit.push({
-                        line : varObj.varUsage[j].line,
-                        order : oder++,
-                        parentlooprank : varObj.varUsage[j].parentlooprank.join('_'),
-                        IsdependentCurrentloop : varObj.varUsage[j].IsdependentCurrentloop,
-                        IsdependentInnerloop : varObj.varUsage[j].IsdependentInnerloop,
-                        IsdependentOuterloop : varObj.varUsage[j].IsdependentOuterloop,
-                        str : tabOP + 'petit_tmp = ' + varObj.varUsage[j].code
-                            });
+                        line: varObj.varUsage[j].line,
+                        order: oder++,
+                        parentlooprank:
+                            varObj.varUsage[j].parentlooprank.join("_"),
+                        IsdependentCurrentloop:
+                            varObj.varUsage[j].IsdependentCurrentloop,
+                        IsdependentInnerloop:
+                            varObj.varUsage[j].IsdependentInnerloop,
+                        IsdependentOuterloop:
+                            varObj.varUsage[j].IsdependentOuterloop,
+                        str: tabOP + "petit_tmp = " + varObj.varUsage[j].code,
+                    });
+                } else if (varObj.varUsage[j].use === "W") {
+                    LoopOmpAttributes[loopindex].ForStmtToPetit.push({
+                        line: varObj.varUsage[j].line,
+                        order: oder++,
+                        parentlooprank:
+                            varObj.varUsage[j].parentlooprank.join("_"),
+                        IsdependentCurrentloop:
+                            varObj.varUsage[j].IsdependentCurrentloop,
+                        IsdependentInnerloop:
+                            varObj.varUsage[j].IsdependentInnerloop,
+                        IsdependentOuterloop:
+                            varObj.varUsage[j].IsdependentOuterloop,
+                        str: tabOP + varObj.varUsage[j].code + " = petit_tmp",
+                    });
+                } else if (varObj.varUsage[j].use === "RW") {
+                    LoopOmpAttributes[loopindex].ForStmtToPetit.push({
+                        line: varObj.varUsage[j].line,
+                        order: oder++,
+                        parentlooprank:
+                            varObj.varUsage[j].parentlooprank.join("_"),
+                        IsdependentCurrentloop:
+                            varObj.varUsage[j].IsdependentCurrentloop,
+                        IsdependentInnerloop:
+                            varObj.varUsage[j].IsdependentInnerloop,
+                        IsdependentOuterloop:
+                            varObj.varUsage[j].IsdependentOuterloop,
+                        str: tabOP + "petit_tmp = " + varObj.varUsage[j].code,
+                    });
+                    LoopOmpAttributes[loopindex].ForStmtToPetit.push({
+                        line: varObj.varUsage[j].line,
+                        order: oder++,
+                        parentlooprank:
+                            varObj.varUsage[j].parentlooprank.join("_"),
+                        IsdependentCurrentloop:
+                            varObj.varUsage[j].IsdependentCurrentloop,
+                        IsdependentInnerloop:
+                            varObj.varUsage[j].IsdependentInnerloop,
+                        IsdependentOuterloop:
+                            varObj.varUsage[j].IsdependentOuterloop,
+                        str: tabOP + varObj.varUsage[j].code + " = petit_tmp",
+                    });
                 }
-                else if (varObj.varUsage[j].use === 'W')
-                {
-                    LoopOmpAttributes[loopindex].ForStmtToPetit.push({
-                        line : varObj.varUsage[j].line,
-                        order : oder++,
-                        parentlooprank : varObj.varUsage[j].parentlooprank.join('_'),
-                        IsdependentCurrentloop : varObj.varUsage[j].IsdependentCurrentloop,
-                        IsdependentInnerloop : varObj.varUsage[j].IsdependentInnerloop,	
-                        IsdependentOuterloop : varObj.varUsage[j].IsdependentOuterloop,					
-                        str : tabOP + varObj.varUsage[j].code + ' = petit_tmp'
-                            });
-                }
-                else if (varObj.varUsage[j].use === 'RW')
-                {
-                    LoopOmpAttributes[loopindex].ForStmtToPetit.push({
-                        line : varObj.varUsage[j].line,
-                        order : oder++,
-                        parentlooprank : varObj.varUsage[j].parentlooprank.join('_'),
-                        IsdependentCurrentloop : varObj.varUsage[j].IsdependentCurrentloop,
-                        IsdependentInnerloop : varObj.varUsage[j].IsdependentInnerloop,
-                        IsdependentOuterloop : varObj.varUsage[j].IsdependentOuterloop,						
-                        str : tabOP + 'petit_tmp = ' + varObj.varUsage[j].code
-                            });					
-                    LoopOmpAttributes[loopindex].ForStmtToPetit.push({
-                        line : varObj.varUsage[j].line,
-                        order : oder++,
-                        parentlooprank : varObj.varUsage[j].parentlooprank.join('_'),
-                        IsdependentCurrentloop : varObj.varUsage[j].IsdependentCurrentloop,
-                        IsdependentInnerloop : varObj.varUsage[j].IsdependentInnerloop,
-                        IsdependentOuterloop : varObj.varUsage[j].IsdependentOuterloop,					
-                        str : tabOP + varObj.varUsage[j].code + ' = petit_tmp'
-                            });					
-                }			
             }
-            
     }
 
-    
-    for(var i=0; i < LoopOmpAttributes[loopindex].ForStmtToPetit.length ; i++)
-    {
-        LoopOmpAttributes[loopindex].ForStmtToPetit[i].str = LoopOmpAttributes[loopindex].ForStmtToPetit[i].str.moveBracketsToEnd3(LoopOmpAttributes[loopindex].petit_arrays);
+    for (
+        let i = 0;
+        i < LoopOmpAttributes[loopindex].ForStmtToPetit.length;
+        i++
+    ) {
+        LoopOmpAttributes[loopindex].ForStmtToPetit[i].str = LoopOmpAttributes[
+            loopindex
+        ].ForStmtToPetit[i].str.moveBracketsToEnd3(
+            LoopOmpAttributes[loopindex].petit_arrays
+        );
     }
 
-    var j = -6;
-    for ( var key in LoopOmpAttributes[loopindex].petit_arrays)
-    {
-        LoopOmpAttributes[loopindex].ForStmtToPetit.push({line : j, str : 'integer ' + 
-                LoopOmpAttributes[loopindex].petit_arrays[key].name + 
-                LoopOmpAttributes[loopindex].petit_arrays[key].size });
+    let j = -6;
+    for (const key in LoopOmpAttributes[loopindex].petit_arrays) {
+        LoopOmpAttributes[loopindex].ForStmtToPetit.push({
+            line: j,
+            str:
+                "integer " +
+                LoopOmpAttributes[loopindex].petit_arrays[key].name +
+                LoopOmpAttributes[loopindex].petit_arrays[key].size,
+        });
         j--;
-        LoopOmpAttributes[loopindex].ForStmtToPetit.push({line : j, str : '!------ ' + 
-                LoopOmpAttributes[loopindex].petit_arrays[key].name + 
-                ' -> ' +key});
+        LoopOmpAttributes[loopindex].ForStmtToPetit.push({
+            line: j,
+            str:
+                "!------ " +
+                LoopOmpAttributes[loopindex].petit_arrays[key].name +
+                " -> " +
+                key,
+        });
         j--;
     }
-    LoopOmpAttributes[loopindex].ForStmtToPetit.push({line : j, str : '!' + Array(50).join('-') +' arrays'});
+    LoopOmpAttributes[loopindex].ForStmtToPetit.push({
+        line: j,
+        str: "!" + Array(50).join("-") + " arrays",
+    });
 
-    LoopOmpAttributes[loopindex].ForStmtToPetit.push({line : -5, str : '!' + Array(50).join('-') +' loop indices'});
-    LoopOmpAttributes[loopindex].ForStmtToPetit.push({line : -4, str : 'integer ' + LoopOmpAttributes[loopindex].petit_loop_indices.join(',')});
+    LoopOmpAttributes[loopindex].ForStmtToPetit.push({
+        line: -5,
+        str: "!" + Array(50).join("-") + " loop indices",
+    });
+    LoopOmpAttributes[loopindex].ForStmtToPetit.push({
+        line: -4,
+        str:
+            "integer " +
+            LoopOmpAttributes[loopindex].petit_loop_indices.join(","),
+    });
 
-    LoopOmpAttributes[loopindex].ForStmtToPetit.push({line : -3, str : '!' + Array(50).join('-') +' variables'});
-    LoopOmpAttributes[loopindex].ForStmtToPetit.push({line : -2, str : 'integer ' + LoopOmpAttributes[loopindex].petit_variables.join(',')});
-    
-    LoopOmpAttributes[loopindex].ForStmtToPetit.push({line : -1, str : '!' + Array(50).join('-') +' body code'});
+    LoopOmpAttributes[loopindex].ForStmtToPetit.push({
+        line: -3,
+        str: "!" + Array(50).join("-") + " variables",
+    });
+    LoopOmpAttributes[loopindex].ForStmtToPetit.push({
+        line: -2,
+        str:
+            "integer " + LoopOmpAttributes[loopindex].petit_variables.join(","),
+    });
 
-    LoopOmpAttributes[loopindex].ForStmtToPetit = LoopOmpAttributes[loopindex].ForStmtToPetit.sort(
-                function(obj1, obj2)
-                {
-                    if(obj1.line !== obj2.line)
-                        return obj1.line - obj2.line;
-                    else
-                        return obj1.order - obj2.order;
-                });
+    LoopOmpAttributes[loopindex].ForStmtToPetit.push({
+        line: -1,
+        str: "!" + Array(50).join("-") + " body code",
+    });
 
+    LoopOmpAttributes[loopindex].ForStmtToPetit = LoopOmpAttributes[
+        loopindex
+    ].ForStmtToPetit.sort(function (obj1, obj2) {
+        if (obj1.line !== obj2.line) return obj1.line - obj2.line;
+        else return obj1.order - obj2.order;
+    });
 
-    var count = 1;
-    var replaceloopindices = {};
+    let count = 1;
+    let replaceloopindices = {};
 
-    for(var loopindices of LoopOmpAttributes[loopindex].petit_loop_indices)
-        if (loopindices.length > 5)
-        {
+    for (const loopindices of LoopOmpAttributes[loopindex].petit_loop_indices)
+        if (loopindices.length > 5) {
             replaceloopindices[loopindices] = {};
-            replaceloopindices[loopindices].rep = 'tmp' + count.toString();;
+            replaceloopindices[loopindices].rep = "tmp" + count.toString();
             count = count + 1;
         }
 
-
-    for(var i=0; i < LoopOmpAttributes[loopindex].ForStmtToPetit.length ; i++)
-    {
-        for (var key in replaceloopindices)
-            if (LoopOmpAttributes[loopindex].ForStmtToPetit[i].str.indexOf(key) !== -1)				
-            {
-                LoopOmpAttributes[loopindex].ForStmtToPetit[i].str = Strings.replacer(LoopOmpAttributes[loopindex].ForStmtToPetit[i].str,key,replaceloopindices[key].rep);
+    for (
+        let i = 0;
+        i < LoopOmpAttributes[loopindex].ForStmtToPetit.length;
+        i++
+    ) {
+        for (const key in replaceloopindices)
+            if (
+                LoopOmpAttributes[loopindex].ForStmtToPetit[i].str.indexOf(
+                    key
+                ) !== -1
+            ) {
+                LoopOmpAttributes[loopindex].ForStmtToPetit[i].str =
+                    Strings.replacer(
+                        LoopOmpAttributes[loopindex].ForStmtToPetit[i].str,
+                        key,
+                        replaceloopindices[key].rep
+                    );
             }
-        
     }
 
-    for(var replace_var of replace_vars)
-        for(var i=0; i < LoopOmpAttributes[loopindex].ForStmtToPetit.length ; i++)
-            LoopOmpAttributes[loopindex].ForStmtToPetit[i].str = Strings.replacer(LoopOmpAttributes[loopindex].ForStmtToPetit[i].str,replace_var,replace_var.substr(1));
-
-end
-
+    for (const replace_var of replace_vars)
+        for (
+            let i = 0;
+            i < LoopOmpAttributes[loopindex].ForStmtToPetit.length;
+            i++
+        )
+            LoopOmpAttributes[loopindex].ForStmtToPetit[i].str =
+                Strings.replacer(
+                    LoopOmpAttributes[loopindex].ForStmtToPetit[i].str,
+                    replace_var,
+                    replace_var.substr(1)
+                );
+}
 
 /**************************************************************
-* 
-*                       CovertLoopToPetitForm
-* 
-**************************************************************/
-aspectdef CovertLoopToPetitForm
-    input $ForStmt, tabOP end
-    output loopPetitForm end
-
-    this.loopPetitForm = tabOP.join('') + 'for ';
-    var loopindex = GetLoopIndex($ForStmt);
-    //console.log("DEBUG - Loop Index: " + loopindex); 
-    //console.log("DEBUG - For Stmt: " + $ForStmt.location); 	
-    //console.log("DEBUG - LoopOmpAttributes[loopindex]: " + LoopOmpAttributes[loopindex]);
-    var loopAttributes = LoopOmpAttributes[loopindex];
-    if(loopAttributes === undefined) {
-        var message = "";
-        message += "Could not find the loop attributes of loop " + loopindex + "@" + $ForStmt.location + ". Current attributes:\n";
-        for(var key in LoopOmpAttributes) {
+ *
+ *                       CovertLoopToPetitForm
+ *
+ **************************************************************/
+function CovertLoopToPetitForm($ForStmt: Loop, tabOP: string[]) {
+    let loopPetitForm = tabOP.join("") + "for ";
+    const loopindex: string = GetLoopIndex($ForStmt);
+    const loopAttributes = LoopOmpAttributes[loopindex];
+    if (loopAttributes === undefined) {
+        let message = "";
+        message +=
+            "Could not find the loop attributes of loop " +
+            loopindex +
+            "@" +
+            $ForStmt.location +
+            ". Current attributes:\n";
+        for (const key in LoopOmpAttributes) {
             message += key + ": " + LoopOmpAttributes[key];
-        }	
-        
+        }
+
         throw message;
     }
-    
-    //var loopControlVarname = LoopOmpAttributes[loopindex].loopControlVarname;
-    var loopControlVarname = loopAttributes.loopControlVarname;
 
-    var cloneJP = null;
+    let loopControlVarname: string | undefined =
+        loopAttributes.loopControlVarname;
 
-    select $ForStmt.init end
-    apply
-        for($cast of $init.getDescendantsAndSelf("vardecl")) // if for(int i = ... )
-        {
-            cloneJP=$cast.init.copy();
-            break #$ForStmt;
-        }
-        for($cast of $init.getDescendantsAndSelf("binaryOp"))// if for(i = ... )
-        {
-            cloneJP=$cast.right.copy();
-            break #$ForStmt;
-        }
-    end
+    let cloneJP: Joinpoint | null = null;
 
+    const $init: Statement = $ForStmt.init;
 
-    for($cast of cloneJP.getDescendantsAndSelf("cast"))
-    {
-        var child = $cast.getChild(0);
-        $cast.replaceWith(child);
+    for (const $cast of $init.getDescendantsAndSelf("vardecl")) { // if for(int i = ... )
+        cloneJP = ($cast as Vardecl).init.copy();
+        break;
+    }
+    for (const $cast of $init.getDescendantsAndSelf("binaryOp")) { // if for(i = ... )
+        cloneJP = ($cast as BinaryOp).right.copy();
+        break;
     }
 
-    for($cast of cloneJP.getDescendantsAndSelf("unaryOp"))
-    {
-        var child = $cast.getChild(0);
-        $cast.replaceWith(child);
+    if (cloneJP) {
+        for (const $cast of cloneJP.getDescendantsAndSelf("cast")) {
+            const child = ($cast as Cast).getChild(0);
+            $cast.replaceWith(child);
+        }
+
+        for (const $cast of cloneJP.getDescendantsAndSelf("unaryOp")) {
+            const child = ($cast as UnaryOp).getChild(0);
+            $cast.replaceWith(child);
+        }
+
+        const str_init = cloneJP.code;
+        loopPetitForm += loopControlVarname + "  =  " + str_init + "  to  ";
     }
-
-
-    var str_init = 	cloneJP.code;
-
-    this.loopPetitForm +=  loopControlVarname + '  =  ' + str_init + '  to  ';
 
     cloneJP = null;
-    var binaryOpleft = null;
-    var binaryOpRight = null;
-    select $ForStmt.cond.binaryOp end
-    apply
-        binaryOpleft=$binaryOp.left.copy();
-        binaryOpRight=$binaryOp.right.copy();
-        break #$ForStmt;
-    end
+    let binaryOpleft: Joinpoint | null = null;
+    let binaryOpRight: Joinpoint | null = null;
+    // select $ForStmt.cond.binaryOp end
+    // apply
+    for (const $binaryOp of Query.searchFrom($ForStmt.cond, BinaryOp)) {
+        binaryOpleft = $binaryOp.left.copy();
+        binaryOpRight = $binaryOp.right.copy();
+        break;
+    }
+    if (binaryOpleft) {
+        let foundflag = false;
+        for (const $cast of binaryOpleft.getDescendantsAndSelf("varref")) {
+            if (($cast as Varref).name === loopControlVarname) {
+                cloneJP = binaryOpRight;
+                foundflag = true;
+            }
+        }
+        if (foundflag === false) cloneJP = binaryOpleft;
 
-    var foundflag = false;
-    for($cast of binaryOpleft.getDescendantsAndSelf("varref"))
-        if ($cast.name === loopControlVarname)
-        {
-            cloneJP=binaryOpRight;
-            foundflag = true;
+        if (cloneJP) {
+            for (const $cast of cloneJP.getDescendantsAndSelf("cast")) {
+                const child = $cast.getChild(0);
+                $cast.replaceWith(child);
+            }
+            for (const $cast of cloneJP.getDescendantsAndSelf("unaryOp")) {
+                const child = $cast.getChild(0);
+                $cast.replaceWith(child);
+            }
+
+            let str_cond = cloneJP.code;
+
+            for (const $cast of cloneJP.getDescendantsAndSelf("binaryOp")) {
+                if (["shr", "shl"].indexOf(($cast as BinaryOp).kind) !== -1)
+                    str_cond = "9999";
+            }
+            loopPetitForm += str_cond;
         }
 
-    if (foundflag === false)
-        cloneJP=binaryOpleft;
+        let stepOp = null;
+        cloneJP = null;
+        //  select $ForStmt.step.expr end
+        //  apply
+        for (const $expr of Query.searchFrom($ForStmt.step, Joinpoint))
+            if (
+                $expr.joinPointType == "binaryOp" ||
+                $expr.joinPointType == "unaryOp"
+            )
+                stepOp = $expr.kind;
 
-
-
-    for($cast of cloneJP.getDescendantsAndSelf("cast"))
-    {
-        var child = $cast.getChild(0);
-        $cast.replaceWith(child);
-    }
-    for($cast of cloneJP.getDescendantsAndSelf("unaryOp"))
-    {
-        var child = $cast.getChild(0);
-        $cast.replaceWith(child);
-    }
-    
-    var str_cond = 	cloneJP.code;
-
-    for($cast of cloneJP.getDescendantsAndSelf("binaryOp"))
-    {
-        if (['shr' , 'shl'].indexOf($cast.kind) !==  -1)
-            str_cond = '9999';
+        if (stepOp === "assign" || stepOp === "add" || stepOp === "sub") {
+            cloneJP = $expr.right.copy();
+        }
+        break;
     }
 
-    this.loopPetitForm +=  str_cond;
+    if (stepOp === "post_inc" || stepOp === "pre_inc") {
+        loopPetitForm += "  do";
+    } else if (stepOp === "pre_dec" || stepOp === "post_dec") {
+        loopPetitForm += "  by  -1  do";
+    } else if (stepOp === "assign") {
+        loopPetitForm += "  do";
+    }
 
-     var stepOp = null;
-     cloneJP = null;
-     select $ForStmt.step.expr end
-     apply
-         stepOp = $expr.kind;
-         
-         if (stepOp === 'assign' || stepOp === 'add' || stepOp === 'sub')
-         {
-             cloneJP=$expr.right.copy();
-         }
-         break #$ForStmt;
-     end
-     condition $expr.joinPointType == 'binaryOp' || $expr.joinPointType == 'unaryOp' end
-     
-
-     if (stepOp === 'post_inc' || stepOp === 'pre_inc')
-     {
-         this.loopPetitForm += '  do';
-     }
-     else if (stepOp === 'pre_dec' || stepOp === 'post_dec')
-     {
-         this.loopPetitForm += '  by  -1  do';
-     }
-     else if (stepOp === 'assign')
-     {
-         this.loopPetitForm += '  do';
-     }
-
-
-end	
+    return loopPetitForm;
+}

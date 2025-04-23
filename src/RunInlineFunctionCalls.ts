@@ -240,13 +240,7 @@ function callInline(func_name: string): void {
             }
         }
 
-        if ($call.name === func_name && $call.getAncestor("ForStmt") != null) {
-            //call aspec_rebuild;
-        }
     }
-}
-function aspec_rebuild(): void {
-    (Query.root() as Program).rebuild();
 }
 
 /**************************************************************

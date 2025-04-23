@@ -67,7 +67,7 @@ jobs:
 
             - name: Setup js workspace
               run: |
-                  echo '{ "name": "SPeCS Workspace", "type": "module", "workspaces": [ "clava-autopar" ] }' > package.json
+                  cd clava-autopar
                   npm install
 
             - name: Lint TS Sources

@@ -426,7 +426,7 @@ function inlinePreparation(
         }
     }
 
-    if (exprStmt.children[0].joinPointType === "binaryOp") {
+    if (exprStmt.children[0] instanceof BinaryOp) {
         let retJPs: Statement[] = funcJP.body.allStmts.filter(function (obj) {
             if (obj.astName === "ReturnStmt") {
                 return obj;

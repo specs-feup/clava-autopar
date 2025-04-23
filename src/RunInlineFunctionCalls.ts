@@ -38,7 +38,7 @@ interface FunctionData {
 const func_name: Record<string, FunctionData> = {};
 let countCallInlinedFunction : number = 0;
 
-export default function RunInlineFunctionCalls(): void {
+function applyFunctionCall(): void {
     for (const $function of Query.search(FileJp).search(FunctionJp)) {
         if (func_name[$function.name] === undefined) {
             func_name[$function.name] = {
@@ -84,7 +84,7 @@ export default function RunInlineFunctionCalls(): void {
         if (!flag) break;
     }
 
-    const excluded_function_list: string[] = [];
+    let excluded_function_list: string[] = [];
     // check for recursive function calls
     for (const callerFunc of Object.keys(func_name)) {
         if (
@@ -132,20 +132,20 @@ export default function RunInlineFunctionCalls(): void {
                 continue;
             }
 
-            if (excluded_function_list.indexOf($function.name) === -1) {
+            if (excluded_function_list.indexOf($vardecl.name) === -1) {
                 debug(
                     "Excluding from inlining '" +
-                        $function.name +
+                        $vardecl.name +
                         "', because it declares at least one global variable (" +
-                        $function.name +
+                        $vardecl.name +
                         "@" +
-                        $function.location +
+                        $vardecl.location +
                         ")"
                 );
-                excluded_function_list.push($function.name);
+                excluded_function_list.push($vardecl.name);
                 AutoParStats.get().incInlineAnalysis(
                     AutoParStats.EXCLUDED_GLOBAL_VAR,
-                    $function.name
+                    $vardecl.name
                 );
             }
 
@@ -221,11 +221,11 @@ function callInline(func_name: string): void {
             // Count as an inlined call
             AutoParStats.get().incInlineCalls();
 
-            const o = inlinePreparation(func_name, $call, exprStmt);
+            let o = inlinePreparation(func_name, $call, exprStmt);
 
             if (o !== undefined) {
                 if (o.$newStmts.length > 0) {
-                    const replacedCallStr = `// ClavaInlineFunction : ${exprStmt.code}  countCallInlinedFunction : ${countCallInlinedFunction}`;
+                    let replacedCallStr = `// ClavaInlineFunction : ${exprStmt.code}  countCallInlinedFunction : ${countCallInlinedFunction}`;
 
                     // Insert after to preserve order of comments
                     let currentStmt = exprStmt.insertAfter(replacedCallStr);
@@ -238,7 +238,13 @@ function callInline(func_name: string): void {
             }
         }
 
+        if ($call.name === func_name && $call.getAncestor("ForStmt") != null) {
+            //call aspec_rebuild;
+        }
     }
+}
+function aspec_rebuild(): void {
+    (Query.root() as Program).rebuild();
 }
 
 /**************************************************************
@@ -280,7 +286,13 @@ function inlinePreparation(
         return;
     }
 
-    let returnStmtJPs: ReturnStmt[] = Query.search(FunctionJp).search(ReturnStmt).get();
+    let returnStmtJPs: ReturnStmt[] = [];
+
+    for (const $function of Query.search(FunctionJp)) {
+        for (const $stmt of Query.searchFrom($function.body, ReturnStmt)) {
+            returnStmtJPs.push($stmt);
+        }
+    }
 
     if (
         returnStmtJPs.length > 1 ||
@@ -412,7 +424,7 @@ function inlinePreparation(
         }
     }
 
-    if (exprStmt.children[0] instanceof BinaryOp) {
+    if (exprStmt.children[0].joinPointType === "binaryOp") {
         let retJPs: Statement[] = funcJP.body.allStmts.filter(function (obj) {
             if (obj.astName === "ReturnStmt") {
                 return obj;

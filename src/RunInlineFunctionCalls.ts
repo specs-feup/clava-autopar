@@ -86,7 +86,7 @@ export default function RunInlineFunctionCalls(): void {
         if (!flag) break;
     }
 
-    let excluded_function_list: string[] = [];
+    const excluded_function_list: string[] = [];
     // check for recursive function calls
     for (const callerFunc of Object.keys(func_name)) {
         if (

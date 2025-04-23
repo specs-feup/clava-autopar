@@ -30,15 +30,13 @@ import { debug } from "@specs-feup/lara/api/lara/core/LaraCore.js";
  *
  **************************************************************/
 
-let countCallInlinedFunction: number;
-
 interface FunctionData {
     innerCallNumber: number;
     CallingFunc: string[];
 }
 
 const func_name: Record<string, FunctionData> = {};
-countCallInlinedFunction = 0;
+let countCallInlinedFunction : number = 0;
 
 export default function RunInlineFunctionCalls(): void {
     for (const $function of Query.search(FileJp).search(FunctionJp)) {

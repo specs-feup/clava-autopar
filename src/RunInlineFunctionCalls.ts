@@ -288,13 +288,7 @@ function inlinePreparation(
         return;
     }
 
-    let returnStmtJPs: ReturnStmt[] = [];
-
-    for (const $function of Query.search(FunctionJp)) {
-        for (const $stmt of Query.searchFrom($function.body, ReturnStmt)) {
-            returnStmtJPs.push($stmt);
-        }
-    }
+    let returnStmtJPs: ReturnStmt[] = Query.search(FunctionJp).search(ReturnStmt).get();
 
     if (
         returnStmtJPs.length > 1 ||

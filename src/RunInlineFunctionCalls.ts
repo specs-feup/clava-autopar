@@ -134,20 +134,20 @@ export default function RunInlineFunctionCalls(): void {
                 continue;
             }
 
-            if (excluded_function_list.indexOf($vardecl.name) === -1) {
+            if (excluded_function_list.indexOf($function.name) === -1) {
                 debug(
                     "Excluding from inlining '" +
-                        $vardecl.name +
+                        $function.name +
                         "', because it declares at least one global variable (" +
-                        $vardecl.name +
+                        $function.name +
                         "@" +
-                        $vardecl.location +
+                        $function.location +
                         ")"
                 );
-                excluded_function_list.push($vardecl.name);
+                excluded_function_list.push($function.name);
                 AutoParStats.get().incInlineAnalysis(
                     AutoParStats.EXCLUDED_GLOBAL_VAR,
-                    $vardecl.name
+                    $function.name
                 );
             }
 

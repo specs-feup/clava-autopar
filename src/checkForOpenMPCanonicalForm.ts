@@ -33,7 +33,11 @@ export interface LoopOmpAttribute {
     Reduction_listVars?: any[],
     DepPetitFileName?: string | null,
     DepArrays?: string[],
-    varAccess?: VarAccess[]
+    varAccess?: VarAccess[],
+    ForStmtToPetit?: any[],
+    petit_variables: string[],
+    petit_arrays?: Record<string, any>,
+    petit_loop_indices: string[]
 }
 
 export interface InitVardecl {

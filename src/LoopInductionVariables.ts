@@ -92,7 +92,6 @@ export default function LoopInductionVariables() {
                         replaceCode = obj.replaceCode;
 
                 if (replaceCode !== null && replaceCode !== $subscript.name) {
-                    const strbefor = $arrayAccess.code;
                     $subscript.insert("replace", replaceCode);
                     AutoParStats.get().incIndunctionVariableReplacements();
                 }

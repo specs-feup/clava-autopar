@@ -36,9 +36,10 @@ export function CheckForSafeFunctionCall(
                 new_safefunctionCallslist.push($function.name);
         }
     }
-    for (const $function of Query.search(FileJp)
+    for (const chain of Query.search(FileJp)
         .search(FunctionJp)
-        .search(Call)) {
+        .search(Call).chain()) {
+        const $function = chain["function"] as FunctionJp;
         if (new_safefunctionCallslist.indexOf($function.name) != -1) {
             new_safefunctionCallslist.splice(
                 new_safefunctionCallslist.indexOf($function.name),

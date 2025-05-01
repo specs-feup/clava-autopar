@@ -22,13 +22,7 @@ import {
  *                       checkForSafeFunctionCall
  *
  **************************************************************/
-export function CheckForSafeFunctionCall(
-    $function: Function,
-    $arrayAccess: ArrayAccess,
-    $memberAccess: MemberAccess,
-    $varref: Varref,
-    $file: FileJp
-) {
+export function CheckForSafeFunctionCall() {
     const new_safefunctionCallslist: string[] = [];
     for (const $function of Query.search(FileJp).search(FunctionJp)) {
         if ($function.params.length > 0) {
@@ -38,7 +32,8 @@ export function CheckForSafeFunctionCall(
     }
     for (const chain of Query.search(FileJp)
         .search(FunctionJp)
-        .search(Call).chain()) {
+        .search(Call)
+        .chain()) {
         const $function = chain["function"] as FunctionJp;
         if (new_safefunctionCallslist.indexOf($function.name) != -1) {
             new_safefunctionCallslist.splice(
@@ -48,79 +43,82 @@ export function CheckForSafeFunctionCall(
         }
     }
 
-    for (const $function of Query.search(FileJp)
-        .search(FunctionJp)
-        .search(Body)
-        .search(ArrayAccess)) {
-        if (new_safefunctionCallslist.indexOf($function.name) != -1) {
-            if ($arrayAccess.use.indexOf("write") == -1) {
-                continue;
-            }
+    for (const $function of Query.search(FileJp).search(FunctionJp)) {
+        for (const $arrayAccess of Query.searchFrom(
+            $function.body,
+            ArrayAccess
+        )) {
+            if (new_safefunctionCallslist.indexOf($function.name) != -1) {
+                if ($arrayAccess.use.indexOf("write") == -1) {
+                    continue;
+                }
 
-            var currentRegion = (
-                $arrayAccess.arrayVar.getDescendantsAndSelf(
-                    "varref"
-                )[0] as Varref
-            ).vardecl.currentRegion;
-            if (
-                (currentRegion != undefined &&
-                    currentRegion.joinPointType == "file") ||
-                (
+                let currentRegion : Joinpoint = (
                     $arrayAccess.arrayVar.getDescendantsAndSelf(
                         "varref"
                     )[0] as Varref
-                ).vardecl.isParam
-            ) {
-                new_safefunctionCallslist.splice(
-                    new_safefunctionCallslist.indexOf($function.name),
-                    1
-                );
+                ).vardecl.currentRegion;
+                if (
+                    (currentRegion != undefined &&
+                        currentRegion.joinPointType == "file") ||
+                    (
+                        $arrayAccess.arrayVar.getDescendantsAndSelf(
+                            "varref"
+                        )[0] as Varref
+                    ).vardecl.isParam
+                ) {
+                    new_safefunctionCallslist.splice(
+                        new_safefunctionCallslist.indexOf($function.name),
+                        1
+                    );
+                }
             }
         }
     }
 
-    for (const $function of Query.search(FileJp)
-        .search(FunctionJp)
-        .search(Body)
-        .search(MemberAccess)) {
-        if (new_safefunctionCallslist.indexOf($function.name) != -1) {
-            if ($memberAccess.use.indexOf("write") == -1) {
-                continue;
-            }
+    for (const $function of Query.search(FileJp).search(FunctionJp)) {
+        for (const $memberAccess of Query.searchFrom(
+            $function.body,
+            MemberAccess
+        )) {
+            if (new_safefunctionCallslist.indexOf($function.name) != -1) {
+                if ($memberAccess.use.indexOf("write") == -1) {
+                    continue;
+                }
 
-            var currentRegion = (
-                $memberAccess.getDescendantsAndSelf("varref")[0] as Varref
-            ).vardecl.currentRegion;
-            if (
-                currentRegion !== undefined &&
-                currentRegion.joinPointType === "file"
-            ) {
-                new_safefunctionCallslist.splice(
-                    new_safefunctionCallslist.indexOf($function.name),
-                    1
-                );
+                let currentRegion : Joinpoint = (
+                    $memberAccess.getDescendantsAndSelf("varref")[0] as Varref
+                ).vardecl.currentRegion;
+                if (
+                    currentRegion !== undefined &&
+                    currentRegion.joinPointType === "file"
+                ) {
+                    new_safefunctionCallslist.splice(
+                        new_safefunctionCallslist.indexOf($function.name),
+                        1
+                    );
+                }
             }
         }
     }
 
-    for (const $function of Query.search(FileJp)
-        .search(FunctionJp)
-        .search(Body)
-        .search(Varref)) {
-        if (new_safefunctionCallslist.indexOf($function.name) != -1) {
-            if ($varref.useExpr.use.indexOf("write") == -1) {
-                continue;
-            }
+    for (const $function of Query.search(FileJp).search(FunctionJp)) {
+        for (const $varref of Query.searchFrom($function.body, Varref)) {
+            if (new_safefunctionCallslist.indexOf($function.name) != -1) {
+                if ($varref.useExpr.use.indexOf("write") == -1) {
+                    continue;
+                }
 
-            var currentRegion = $varref.vardecl.currentRegion;
-            if (
-                currentRegion != undefined &&
-                currentRegion.joinPointType == "file"
-            ) {
-                new_safefunctionCallslist.splice(
-                    new_safefunctionCallslist.indexOf($function.name),
-                    1
-                );
+                let currentRegion : Joinpoint = $varref.vardecl.currentRegion;
+                if (
+                    currentRegion != undefined &&
+                    currentRegion.joinPointType == "file"
+                ) {
+                    new_safefunctionCallslist.splice(
+                        new_safefunctionCallslist.indexOf($function.name),
+                        1
+                    );
+                }
             }
         }
     }

@@ -125,7 +125,7 @@ export function CheckForSafeFunctionCall(
         }
     }
 
-    for (const $function of Query.search(FileJp)) {
+    for (const $file of Query.search(FileJp)) {
         $file.insertBegin(
             "//new_safefunctionCallslist : " +
                 new_safefunctionCallslist.join(" , ")

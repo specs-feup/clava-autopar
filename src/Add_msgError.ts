@@ -10,7 +10,7 @@ import { LoopOmpAttribute } from "./checkForOpenMPCanonicalForm.js";
 export default function Add_msgError(
     LoopOmpAttributes: Record<string, LoopOmpAttribute>,
     $ForStmt: Loop,
-    msgError: string | any
+    msgError: string | string[]
 ) {
     const loopindex = GetLoopIndex($ForStmt);
 

@@ -10,6 +10,7 @@ import GetLoopIndex from "./GetLoopIndex.js";
 import SearchStruct from "./SearchStruct.js";
 import { orderedVarrefs3 } from "./orderedVarrefs3.js";
 import { LoopOmpAttributes } from "./checkForOpenMPCanonicalForm.js";
+import JoinPoints from "@specs-feup/lara/api/weaver/JoinPoints.js";
 
 export default function checkvarreReduction($ForStmt: Loop) {
     let Reduction: string[] = [];
@@ -69,7 +70,7 @@ export default function checkvarreReduction($ForStmt: Loop) {
  *                       retReductionOpVar
  *
  **************************************************************/
-function retReductionOpVar($expr: Expression, candidateVar) {
+function retReductionOpVar($expr: Expression) {
     const Reduction: string[] = [];
 
     const exprvarrefset = orderedVarrefs3($expr);

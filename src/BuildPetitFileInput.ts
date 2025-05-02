@@ -7,8 +7,9 @@ import get_varTypeAccess from "./get_varTypeAccess.js";
 import {
     FunctionJp,
     Loop,
-    Joinpoint,
+    Expression,
     BinaryOp,
+    UnaryOp,
     Vardecl,
     Varref,
     Op,
@@ -26,7 +27,7 @@ export default function BuildPetitFileInput($ForStmt: Loop) {
     let replace_vars: string[] = [];
     let loopindex: string = GetLoopIndex($ForStmt);
 
-    if (typeof LoopOmpAttributes[loopindex] === "undefined") return;
+    if (LoopOmpAttributes[loopindex].msgError.length !== 0) return;
 
     LoopOmpAttributes[loopindex].ForStmtToPetit = [];
     LoopOmpAttributes[loopindex].petit_variables = [];
@@ -49,15 +50,15 @@ export default function BuildPetitFileInput($ForStmt: Loop) {
         }
     }
 
-    let loopsControlVarname = [];
-    loopsControlVarname.push(LoopOmpAttributes[loopindex].loopControlVarname);
-    if (LoopOmpAttributes[loopindex].innerloopsControlVarname !== undefined)
+    let loopsControlVarname: string[]= [];
+    if(LoopOmpAttributes[loopindex].loopControlVarname !== undefined){
+        loopsControlVarname.push(LoopOmpAttributes[loopindex].loopControlVarname);
+    }    
+    if (LoopOmpAttributes[loopindex].innerloopsControlVarname !== undefined){
         loopsControlVarname = loopsControlVarname.concat(
             LoopOmpAttributes[loopindex].innerloopsControlVarname
         );
-    loopsControlVarname = loopsControlVarname.filter(
-        (v): v is string => typeof v === "string"
-    );
+    }
     for (let i = 0; i < loopsControlVarname.length; i++)
         LoopOmpAttributes[loopindex].petit_loop_indices.push(
             loopsControlVarname[i]
@@ -66,14 +67,10 @@ export default function BuildPetitFileInput($ForStmt: Loop) {
     let tabOP: string[] = [];
 
     const loopPetitForm = CovertLoopToPetitForm($ForStmt, tabOP);
-
-    const attr = LoopOmpAttributes[loopindex];
-    if (!attr) return;
-    attr.ForStmtToPetit ??= [];
-
-    attr.ForStmtToPetit.push({ line: attr.start, str: loopPetitForm });
-    attr.ForStmtToPetit.push({
-        line: attr.end,
+        
+    LoopOmpAttributes[loopindex].ForStmtToPetit.push({ line: LoopOmpAttributes[loopindex].start, str: loopPetitForm });
+    LoopOmpAttributes[loopindex].ForStmtToPetit.push({
+        line: LoopOmpAttributes[loopindex].end,
         str: tabOP.join("") + "endfor",
     });
 
@@ -90,13 +87,11 @@ export default function BuildPetitFileInput($ForStmt: Loop) {
 
             const innerAttr = LoopOmpAttributes[innerloopindex];
 
-            attr.ForStmtToPetit ??= [];
-
-            attr.ForStmtToPetit.push({
+            LoopOmpAttributes[loopindex].ForStmtToPetit.push({
                 line: innerAttr.start,
                 str: loopPetitForm,
             });
-            attr.ForStmtToPetit.push({
+            LoopOmpAttributes[loopindex].ForStmtToPetit.push({
                 line: innerAttr.end,
                 str: tabOP.join("") + "endfor",
             });
@@ -121,7 +116,7 @@ export default function BuildPetitFileInput($ForStmt: Loop) {
                     varObj.varUsage[j].parentlooprank.length
                 ).join("\t");
                 if (varObj.varUsage[j].use === "R") {
-                    attr.ForStmtToPetit.push({
+                    LoopOmpAttributes[loopindex].ForStmtToPetit.push({
                         line: varObj.varUsage[j].line,
                         order: oder++,
                         parentlooprank:
@@ -135,7 +130,7 @@ export default function BuildPetitFileInput($ForStmt: Loop) {
                         str: tabOP + "petit_tmp = " + varObj.varUsage[j].code,
                     });
                 } else if (varObj.varUsage[j].use === "W") {
-                    attr.ForStmtToPetit.push({
+                    LoopOmpAttributes[loopindex].ForStmtToPetit.push({
                         line: varObj.varUsage[j].line,
                         order: oder++,
                         parentlooprank:
@@ -149,7 +144,7 @@ export default function BuildPetitFileInput($ForStmt: Loop) {
                         str: tabOP + varObj.varUsage[j].code + " = petit_tmp",
                     });
                 } else if (varObj.varUsage[j].use === "RW") {
-                    attr.ForStmtToPetit.push({
+                    LoopOmpAttributes[loopindex].ForStmtToPetit.push({
                         line: varObj.varUsage[j].line,
                         order: oder++,
                         parentlooprank:
@@ -162,7 +157,7 @@ export default function BuildPetitFileInput($ForStmt: Loop) {
                             varObj.varUsage[j].IsdependentOuterloop,
                         str: tabOP + "petit_tmp = " + varObj.varUsage[j].code,
                     });
-                    attr.ForStmtToPetit.push({
+                    LoopOmpAttributes[loopindex].ForStmtToPetit.push({
                         line: varObj.varUsage[j].line,
                         order: oder++,
                         parentlooprank:
@@ -177,65 +172,62 @@ export default function BuildPetitFileInput($ForStmt: Loop) {
                     });
                 }
             }
-    }
+    }   
 
-    const forStmts = LoopOmpAttributes[loopindex].ForStmtToPetit;
-    if (!forStmts) return;
-
-    for (let i = 0; i < forStmts.length; i++) {
-        forStmts[i].str = forStmts[i].str.moveBracketsToEnd3(
+    for (let i = 0; i < LoopOmpAttributes[loopindex].ForStmtToPetit.length; i++) {
+        LoopOmpAttributes[loopindex].ForStmtToPetit[i].str = LoopOmpAttributes[loopindex].ForStmtToPetit[i].str.moveBracketsToEnd3(
             LoopOmpAttributes[loopindex].petit_arrays
         );
     }
 
     let j = -6;
-    for (const key in attr.petit_arrays) {
-        attr.ForStmtToPetit.push({
+    for (const key in LoopOmpAttributes[loopindex].petit_arrays) {
+        LoopOmpAttributes[loopindex].ForStmtToPetit.push({
             line: j,
             str:
                 "integer " +
-                attr.petit_arrays[key].name +
-                attr.petit_arrays[key].size,
+                LoopOmpAttributes[loopindex].petit_arrays[key].name +
+                LoopOmpAttributes[loopindex].petit_arrays[key].size,
         });
         j--;
-        attr.ForStmtToPetit.push({
+        LoopOmpAttributes[loopindex].ForStmtToPetit.push({
             line: j,
-            str: "!------ " + attr.petit_arrays[key].name + " -> " + key,
+            str: "!------ " + LoopOmpAttributes[loopindex].petit_arrays[key].name + " -> " + key,
         });
         j--;
     }
-    attr.ForStmtToPetit.push({
+    LoopOmpAttributes[loopindex].ForStmtToPetit.push({
         line: j,
         str: "!" + Array(50).join("-") + " arrays",
     });
 
-    attr.ForStmtToPetit.push({
+    LoopOmpAttributes[loopindex].ForStmtToPetit.push({
         line: -5,
         str: "!" + Array(50).join("-") + " loop indices",
     });
-    attr.ForStmtToPetit.push({
+    LoopOmpAttributes[loopindex].ForStmtToPetit.push({
         line: -4,
         str:
             "integer " +
             LoopOmpAttributes[loopindex].petit_loop_indices.join(","),
     });
 
-    attr.ForStmtToPetit.push({
+    LoopOmpAttributes[loopindex].ForStmtToPetit.push({
         line: -3,
         str: "!" + Array(50).join("-") + " variables",
     });
-    attr.ForStmtToPetit.push({
+    LoopOmpAttributes[loopindex].ForStmtToPetit.push({
         line: -2,
         str:
             "integer " + LoopOmpAttributes[loopindex].petit_variables.join(","),
     });
 
-    attr.ForStmtToPetit.push({
+    LoopOmpAttributes[loopindex].ForStmtToPetit.push({
         line: -1,
         str: "!" + Array(50).join("-") + " body code",
     });
 
-    attr.ForStmtToPetit = attr.ForStmtToPetit.sort(function (obj1, obj2) {
+    LoopOmpAttributes[loopindex].ForStmtToPetit = LoopOmpAttributes[loopindex].ForStmtToPetit.sort(function (obj1, obj2) {
         if (obj1.line !== obj2.line) return obj1.line - obj2.line;
         else return obj1.order - obj2.order;
     });
@@ -250,18 +242,18 @@ export default function BuildPetitFileInput($ForStmt: Loop) {
             count = count + 1;
         }
 
-    for (let i = 0; i < attr.ForStmtToPetit.length; i++) {
+    for (let i = 0; i < LoopOmpAttributes[loopindex].ForStmtToPetit.length; i++) {
         for (const key in replaceloopindices)
-            if (attr.ForStmtToPetit[i].str.indexOf(key) !== -1) {
-                attr.ForStmtToPetit[i].str = attr.ForStmtToPetit[
+            if (LoopOmpAttributes[loopindex].ForStmtToPetit[i].str.indexOf(key) !== -1) {
+                LoopOmpAttributes[loopindex].ForStmtToPetit[i].str = LoopOmpAttributes[loopindex].ForStmtToPetit[
                     i
                 ].str.replacer(key, replaceloopindices[key].rep);
             }
     }
 
     for (const replace_var of replace_vars)
-        for (let i = 0; i < attr.ForStmtToPetit.length; i++)
-            attr.ForStmtToPetit[i].str = attr.ForStmtToPetit[i].str.replacer(
+        for (let i = 0; i < LoopOmpAttributes[loopindex].ForStmtToPetit.length; i++)
+            LoopOmpAttributes[loopindex].ForStmtToPetit[i].str = LoopOmpAttributes[loopindex].ForStmtToPetit[i].str.replacer(
                 replace_var,
                 replace_var.substr(1)
             );
@@ -299,12 +291,12 @@ export function CovertLoopToPetitForm($ForStmt: Loop, tabOP: string[]) {
         for (const $cast of loop.init.getDescendantsAndSelf("vardecl")) {
             // if for(int i = ... )
             cloneJP = ($cast as Vardecl).init.copy();
-            continue;
+            break;
         }
         for (const $cast of loop.init.getDescendantsAndSelf("binaryOp")) {
             // if for(i = ... )
             cloneJP = ($cast as BinaryOp).right.copy();
-            continue;
+            break;
         }
     }
 
@@ -362,12 +354,11 @@ export function CovertLoopToPetitForm($ForStmt: Loop, tabOP: string[]) {
 
     let stepOp = null;
     cloneJP = null;
-    for (const $expr of Query.searchFrom($ForStmt.step, Joinpoint)) {
-        if (
-            $expr.joinPointType == "binaryOp" ||
-            $expr.joinPointType == "unaryOp"
-        )
-            stepOp = ($expr as Op).kind;
+    for (const $expr of Query.searchFrom($ForStmt.step, Expression)) {
+        if (!($expr instanceof BinaryOp || $expr instanceof UnaryOp)) {
+            continue;
+        }
+        stepOp = ($expr as Op).kind;
 
         if (stepOp === "assign" || stepOp === "add" || stepOp === "sub") {
             cloneJP = ($expr as BinaryOp).right.copy();

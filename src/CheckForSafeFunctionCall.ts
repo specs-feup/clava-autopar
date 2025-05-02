@@ -46,7 +46,7 @@ export function CheckForSafeFunctionCall() {
                     continue;
                 }
 
-                let currentRegion : Joinpoint = (
+                const currentRegion : Joinpoint = (
                     $arrayAccess.arrayVar.getDescendantsAndSelf(
                         "varref"
                     )[0] as Varref
@@ -79,7 +79,7 @@ export function CheckForSafeFunctionCall() {
                     continue;
                 }
 
-                let currentRegion : Joinpoint = (
+                const currentRegion : Joinpoint = (
                     $memberAccess.getDescendantsAndSelf("varref")[0] as Varref
                 ).vardecl.currentRegion;
                 if (
@@ -102,7 +102,7 @@ export function CheckForSafeFunctionCall() {
                     continue;
                 }
 
-                let currentRegion : Joinpoint = $varref.vardecl.currentRegion;
+                const currentRegion : Joinpoint = $varref.vardecl.currentRegion;
                 if (
                     currentRegion != undefined &&
                     currentRegion.joinPointType == "file"

@@ -3,7 +3,6 @@ import {
     FunctionJp,
     FileJp,
     Call,
-    Body,
     Vardecl,
     ExprStmt,
     BinaryOp,
@@ -22,7 +21,9 @@ import Query from "@specs-feup/lara/api/weaver/Query.js";
 import { safefunctionCallslist } from "./SafeFunctionCalls.js";
 import ClavaJoinPoints from "@specs-feup/clava/api/clava/ClavaJoinPoints.js";
 import ClavaType from "@specs-feup/clava/api/clava/ClavaType.js";
-import { debug } from "@specs-feup/lara/api/lara/core/LaraCore.js";
+import { debug, } from "@specs-feup/lara/api/lara/core/LaraCore.js";
+import { object2string } from "@specs-feup/lara/api/core/output.js";
+
 
 /**************************************************************
  *
@@ -36,20 +37,18 @@ interface FunctionData {
 }
 
 const func_name: Record<string, FunctionData> = {};
-let countCallInlinedFunction : number = 0;
+let countCallInlinedFunction: number = 0;
 
 function applyFunctionCall(): void {
     for (const $function of Query.search(FileJp).search(FunctionJp)) {
-        if (func_name[$function.name] === undefined) {
-            func_name[$function.name] = {
-                innerCallNumber: 0,
-                CallingFunc: [],
-            };
-        }
+        func_name[$function.name] ??= {
+            innerCallNumber: 0,
+            CallingFunc: [],
+        };
     }
 
     for (const $function of Query.search(FileJp).search(FunctionJp)) {
-        let innerCalls = $function.getDescendants("call") as Call[];
+        const innerCalls = $function.getDescendants("call") as Call[];
         func_name[$function.name] = {
             innerCallNumber: innerCalls.length,
             CallingFunc: [],
@@ -91,6 +90,11 @@ function applyFunctionCall(): void {
             func_name[callerFunc].CallingFunc.includes(callerFunc) &&
             !excluded_function_list.includes(callerFunc)
         ) {
+            debug(
+                "Excluding from inlining '" +
+                    callerFunc +
+                    "', because it is recursive"
+            );
             excluded_function_list.push(callerFunc);
             AutoParStats.get().incInlineAnalysis(
                 AutoParStats.EXCLUDED_RECURSIVE,
@@ -100,7 +104,7 @@ function applyFunctionCall(): void {
     }
 
     for (const $function of Query.search(FileJp).search(FunctionJp)) {
-        let innerCalls = $function.getDescendants("call") as Call[];
+        const innerCalls = $function.getDescendants("call") as Call[];
         func_name[$function.name] = {
             innerCallNumber: innerCalls.length,
             CallingFunc: [],
@@ -114,7 +118,13 @@ function applyFunctionCall(): void {
                 func_name[callName] === undefined
             ) {
                 if (!excluded_function_list.includes($function.name)) {
-                    // console.debug(`Excluding from inlining '${function.name}', because it is not considered safe (func_name[callName]: ${func_name[]})`);
+                    debug(
+                        "Excluding from inlining '" +
+                            $function.name +
+                            "', because is not considered safe (func_name[obj.name]: " +
+                            object2string(func_name[obj.name]) +
+                            ")"
+                    );
                     excluded_function_list.push($function.name);
                     AutoParStats.get().incInlineAnalysis(
                         AutoParStats.EXCLUDED_IS_UNSAFE,
@@ -176,7 +186,7 @@ function applyFunctionCall(): void {
                 excluded_function_list
             );
 
-            let sorted: [string, number][] = [];
+            const sorted: [string, number][] = [];
 
             for (const key of Object.keys(func_name)) {
                 sorted.push([key, func_name[key].innerCallNumber]);
@@ -200,7 +210,7 @@ function applyFunctionCall(): void {
  **************************************************************/
 function callInline(func_name: string): void {
     for (const $call of Query.search(FileJp).search(FunctionJp).search(Call)) {
-        let exprStmt = $call.getAncestor("ExprStmt") as ExprStmt;
+        const exprStmt = $call.getAncestor("ExprStmt") as ExprStmt;
 
         if (exprStmt === undefined) {
             continue;
@@ -208,13 +218,13 @@ function callInline(func_name: string): void {
 
         if (
             // funcCall(...)
-            (exprStmt.children[0].joinPointType === "call" &&
+            (exprStmt.children[0] instanceof Call &&
                 exprStmt.getDescendantsAndSelf("call").length === 1 &&
-                (exprStmt.children[0] as Call).name === func_name) || // var op funcCall(...)
-            (exprStmt.children[0].joinPointType === "binaryOp" &&
-                (exprStmt.children[0] as BinaryOp).right.joinPointType ===
+                (exprStmt.children[0]).name === func_name) || // var op funcCall(...)
+            (exprStmt.children[0] instanceof BinaryOp &&
+                (exprStmt.children[0]).right.joinPointType ===
                     "call" &&
-                (exprStmt.children[0] as BinaryOp).right.getDescendantsAndSelf(
+                (exprStmt.children[0]).right.getDescendantsAndSelf(
                     "call"
                 ).length === 1)
         ) {
@@ -266,10 +276,6 @@ function inlinePreparation(
     let $newStmts: Statement[] = [];
 
     let funcJP = null;
-    let funcJP_backup = null;
-    let funcJPOrginal = null;
-    let funcJPBackupCode: string = "";
-    let funcAstBackup: string = "";
 
     for (const $function of Query.search(FunctionJp)) {
         if ($function.name === func_name && $function.isImplementation) {
@@ -491,7 +497,7 @@ function updateSubscripts(
     subscripts: string,
     param_table: Record<string, string>
 ) {
-    const idRegex = /[a-zA-Z_][a-zA-Z_0-9]*/g;
+    const idRegex = /[a-zA-Z_]\w*/g;
     let match = idRegex["exec"](subscripts);
 
     let startIndex = 0;

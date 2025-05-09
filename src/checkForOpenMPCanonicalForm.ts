@@ -33,7 +33,7 @@ export interface LoopOmpAttribute {
     Reduction_listVars?: any[],
     DepPetitFileName?: string | null,
     DepArrays?: string[],
-    varAccess?: VarAccess[]
+    varAccess: VarAccess[]
 }
 
 export interface InitVardecl {
@@ -57,7 +57,7 @@ export const LoopOmpAttributes: Record<string, LoopOmpAttribute> = {};
 
 export default function checkForOpenMPCanonicalForm($ForStmt: Loop) {
 
-    var loopindex = GetLoopIndex($ForStmt);
+    const loopindex = GetLoopIndex($ForStmt);
 
 
     // check if $ForStmt has been checked for Canonical Form or not	
@@ -69,6 +69,7 @@ export default function checkForOpenMPCanonicalForm($ForStmt: Loop) {
         msgError:  [],
         astId:  $ForStmt.astId,
         loopindex:  loopindex,
+        varAccess: [],
     };
 
 

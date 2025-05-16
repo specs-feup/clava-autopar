@@ -117,12 +117,10 @@ function ret_IF_Clause($ForStmt: Loop) {
     const $init = $ForStmt.init;
 
     for (const $cast of $init.getDescendantsAndSelf("vardecl")) {
-        // if for(int i = ... )
         cloneJP = ($cast as Vardecl).init.copy();
         break;
     }
     for (const $cast of $init.getDescendantsAndSelf("binaryOp")) {
-        // if for(i = ... )
         cloneJP = ($cast as BinaryOp).right.copy();
         break;
     }

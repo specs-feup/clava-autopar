@@ -2,6 +2,7 @@ import Query from "@specs-feup/lara/api/weaver/Query.js";
 import {
     ArrayAccess,
     Call,
+    Expression,
     FunctionJp,
     If,
     Loop,
@@ -29,7 +30,7 @@ export interface VarUsage {
     code: string;
     isInsideLoopHeader: boolean;
     parentlooprank: number[];
-    subscript?: string;
+    subscript?: Expression[];
     IsdependentCurrentloop: boolean;
     IsdependentInnerloop: boolean;
     IsdependentOuterloop: boolean;
@@ -80,7 +81,7 @@ export default function SetVariableAccess($ForStmt: Loop) {
     const noVarrefVariables = [];
 
     for (let index = 0; index < loopvarrefset.length; index++) {
-        const $varref  = loopvarrefset[index];
+        const $varref = loopvarrefset[index];
 
         const o = get_varTypeAccess($varref);
         const varTypeAccess = o.varTypeAccess;
@@ -100,7 +101,8 @@ export default function SetVariableAccess($ForStmt: Loop) {
         )
             noVarrefVariables.push(varName);
 
-        const useExpr = varUse === "read" ? "R" : varUse === "write" ? "W" : "RW";
+        const useExpr =
+            varUse === "read" ? "R" : varUse === "write" ? "W" : "RW";
 
         if (vardecl != null) {
             let vardeclRegion = "";
@@ -183,7 +185,7 @@ export default function SetVariableAccess($ForStmt: Loop) {
             varTypeAccess === "memberArrayAccess" ||
             varTypeAccess === "arrayAccess"
         ) {
-            varUsage.subscript = $varref.subscript;
+            varUsage.subscript = ($varref as unknown as ArrayAccess).subscript;
             if (vardecl != null) {
                 arraysizeStr = vardecl.code;
                 arraysizeStr = arraysizeStr.slice(
@@ -197,7 +199,7 @@ export default function SetVariableAccess($ForStmt: Loop) {
         }
 
         if (hasDescendantOfArrayAccess === true) {
-            if ($varref.subscript === undefined) {
+            if (($varref as any).subscript === undefined) {
                 Add_msgError(
                     LoopOmpAttributes,
                     $ForStmt,
@@ -205,21 +207,29 @@ export default function SetVariableAccess($ForStmt: Loop) {
                 );
                 return;
             }
-
-            const o = retsubscriptcurrentloop($varref, loopControlVarname);
-            varUsage.subscriptcurrentloop = o.subscriptstr;
+            if (loopControlVarname) {
+                varUsage.subscriptcurrentloop = retsubscriptcurrentloop(
+                    $varref as unknown as ArrayAccess,
+                    loopControlVarname
+                );
+            } else {
+                throw new Error("loopControlVarname undefined");
+            }
 
             let subscriptVarNamelist: string[] = [];
             for (const arrayAccessobj of $varref.getDescendantsAndSelf(
                 "arrayAccess"
             )) {
                 subscriptVarNamelist = retsubscriptVars(
-                    arrayAccessobj,
+                    arrayAccessobj as ArrayAccess,
                     subscriptVarNamelist
                 );
             }
 
-            if (loopControlVarname && subscriptVarNamelist.indexOf(loopControlVarname) !== -1)
+            if (
+                loopControlVarname &&
+                subscriptVarNamelist.indexOf(loopControlVarname) !== -1
+            )
                 varUsage.IsdependentCurrentloop = true;
 
             for (const innerloopsVarname of innerloopsControlVarname)
@@ -272,8 +282,14 @@ export default function SetVariableAccess($ForStmt: Loop) {
 
         let varNextUse;
         if (varObj.length === 0) {
-            if (varTypeAccess && varName && typeof LoopOmpAttributes[loopindex].end == "number") {
-                const end: number = LoopOmpAttributes[loopindex].end;
+            if (varTypeAccess && varName) {
+                if (LoopOmpAttributes[loopindex].end === undefined) {
+                    throw new Error(
+                        "LoopOmpAttributes[loopindex].end is undefined"
+                    );
+                }
+                const end = LoopOmpAttributes[loopindex]
+                    .end as unknown as number;
                 varNextUse = FindVariableNextUse(
                     functionvarrefset,
                     end,
@@ -439,5 +455,5 @@ function retsubscriptcurrentloop(
             }
     }
 
-    return { subscriptstr };
+    return subscriptstr;
 }

@@ -4,13 +4,14 @@ import GetLoopIndex from "./GetLoopIndex.js";
 import { orderedVarrefs3 } from "./orderedVarrefs3.js";
 import SearchStruct from "./SearchStruct.js";
 import { LoopOmpAttributes } from "./checkForOpenMPCanonicalForm.js";
+import { VarAccess } from "./SetVariableAccess.js";
 
 /**************************************************************
 * 
 *                       FindReductionArrays
 * 
 **************************************************************/
-export default function FindReductionArrays($ForStmt: Loop, candidateArrayName, exprline: number, isdependentInnerloop: boolean, isdependentCurrentloop: boolean, isdependentOuterloop: boolean) {
+export default function FindReductionArrays($ForStmt: Loop, candidateArrayName: string, exprline: number, isdependentInnerloop: boolean, isdependentCurrentloop: boolean, isdependentOuterloop: boolean) {
     let reduction: string[] = [];
 
     let isReductionArrays = false;
@@ -56,7 +57,7 @@ export default function FindReductionArrays($ForStmt: Loop, candidateArrayName, 
 
     for (const $expr of Query.searchFrom($ForStmt.body, Expression, {line: exprline})) {
         reduction = retReductionOpArray($expr, candidateArray, isdependentInnerloop, isdependentCurrentloop, isdependentOuterloop);
-        break #$ForStmt;
+        break;
     
     }
 
@@ -77,7 +78,7 @@ export default function FindReductionArrays($ForStmt: Loop, candidateArrayName, 
 *                       retReductionOpArray
 * 
 **************************************************************/
-function retReductionOpArray($expr: Expression, candidateVar, isdependentInnerloop: boolean, isdependentCurrentloop: boolean, isdependentOuterloop: boolean) {
+function retReductionOpArray($expr: Expression, candidateVar : VarAccess, isdependentInnerloop: boolean, isdependentCurrentloop: boolean, isdependentOuterloop: boolean) {
     
     const reduction: string[] = [];
     let candidateVarUse = null;
@@ -151,7 +152,7 @@ function retReductionOpArray($expr: Expression, candidateVar, isdependentInnerlo
     if (
         isdependentInnerloop === true
         )
-        arraysizeStr = candidateVar.name + candidateVar.ArraySize.allReplace({'\\[':'[:'});
+        arraysizeStr = candidateVar.name + candidateVar.ArraySize.replaceAll('\\[','[:');
     else if (isdependentInnerloop === false)		
     {
         arraysizeStr = candidateVarUse;

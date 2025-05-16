@@ -5,7 +5,7 @@ import ParallelizeLoop from "./ParallelizeLoop.js";
 import AddPragmaLoopIndex from "./AddPragmaLoopIndex.js";
 import RunInlineFunctionCalls from "./RunInlineFunctionCalls.js";
 import LoopInductionVariables from "./LoopInductionVariables.js";
-import CheckForSafeFunctionCall from "./CheckForSafeFunctionCall.js";
+import {CheckForSafeFunctionCall} from "./CheckForSafeFunctionCall.js";
 import AutoParStats from "./AutoParStats.js";
 
 import Clava from "@specs-feup/clava/api/clava/Clava.js";

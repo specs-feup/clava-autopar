@@ -22,6 +22,7 @@ import {
 import SearchStruct from "./SearchStruct.js";
 import Query from "@specs-feup/lara/api/weaver/Query.js";
 import { VarAccess } from "./SetVariableAccess.js";
+import  { moveBracketsToEnd3 }  from './allReplace.js'; 
 
 export default function BuildPetitFileInput($ForStmt: Loop) {
     let replace_vars: string[] = [];
@@ -67,13 +68,16 @@ export default function BuildPetitFileInput($ForStmt: Loop) {
     let tabOP: string[] = [];
 
     const loopPetitForm = CovertLoopToPetitForm($ForStmt, tabOP);
-        
-    LoopOmpAttributes[loopindex].ForStmtToPetit.push({ line: LoopOmpAttributes[loopindex].start, str: loopPetitForm });
-    LoopOmpAttributes[loopindex].ForStmtToPetit.push({
-        line: LoopOmpAttributes[loopindex].end,
-        str: tabOP.join("") + "endfor",
-    });
-
+    
+    if (LoopOmpAttributes[loopindex].start !== undefined) {
+        LoopOmpAttributes[loopindex].ForStmtToPetit.push({ line: LoopOmpAttributes[loopindex].start, str: loopPetitForm });
+    }
+    if (LoopOmpAttributes[loopindex].end !== undefined) {
+        LoopOmpAttributes[loopindex].ForStmtToPetit.push({
+            line: LoopOmpAttributes[loopindex].end,
+            str: tabOP.join("") + "endfor",
+        });
+    }
     for (const $loop of Query.searchFrom($ForStmt.body, Loop)) {
         if ($loop.astName === "ForStmt") {
             const innerloopindex = GetLoopIndex($loop);
@@ -86,15 +90,19 @@ export default function BuildPetitFileInput($ForStmt: Loop) {
             const loopPetitForm = CovertLoopToPetitForm($loop, tabOP);
 
             const innerAttr = LoopOmpAttributes[innerloopindex];
-
-            LoopOmpAttributes[loopindex].ForStmtToPetit.push({
-                line: innerAttr.start,
-                str: loopPetitForm,
-            });
-            LoopOmpAttributes[loopindex].ForStmtToPetit.push({
-                line: innerAttr.end,
-                str: tabOP.join("") + "endfor",
-            });
+            
+            if (innerAttr.start !== undefined) {
+                LoopOmpAttributes[loopindex].ForStmtToPetit.push({
+                    line: innerAttr.start,
+                    str: loopPetitForm,
+                });
+            }
+            if (innerAttr.end !== undefined){
+                LoopOmpAttributes[loopindex].ForStmtToPetit.push({
+                    line: innerAttr.end,
+                    str: tabOP.join("") + "endfor",
+                });
+            }
         }
     }
 
@@ -175,9 +183,10 @@ export default function BuildPetitFileInput($ForStmt: Loop) {
     }   
 
     for (let i = 0; i < LoopOmpAttributes[loopindex].ForStmtToPetit.length; i++) {
-        LoopOmpAttributes[loopindex].ForStmtToPetit[i].str = LoopOmpAttributes[loopindex].ForStmtToPetit[i].str.moveBracketsToEnd3(
+        LoopOmpAttributes[loopindex].ForStmtToPetit[i].str = moveBracketsToEnd3(
+            LoopOmpAttributes[loopindex].ForStmtToPetit[i].str,
             LoopOmpAttributes[loopindex].petit_arrays
-        );
+        );        
     }
 
     let j = -6;
@@ -229,7 +238,7 @@ export default function BuildPetitFileInput($ForStmt: Loop) {
 
     LoopOmpAttributes[loopindex].ForStmtToPetit = LoopOmpAttributes[loopindex].ForStmtToPetit.sort(function (obj1, obj2) {
         if (obj1.line !== obj2.line) return obj1.line - obj2.line;
-        else return obj1.order - obj2.order;
+        else return (obj1.order ?? 0) - (obj2.order ?? 0);
     });
 
     let count = 1;
@@ -247,13 +256,13 @@ export default function BuildPetitFileInput($ForStmt: Loop) {
             if (LoopOmpAttributes[loopindex].ForStmtToPetit[i].str.indexOf(key) !== -1) {
                 LoopOmpAttributes[loopindex].ForStmtToPetit[i].str = LoopOmpAttributes[loopindex].ForStmtToPetit[
                     i
-                ].str.replacer(key, replaceloopindices[key].rep);
+                ].str.replace(key, replaceloopindices[key].rep);
             }
     }
 
     for (const replace_var of replace_vars)
         for (let i = 0; i < LoopOmpAttributes[loopindex].ForStmtToPetit.length; i++)
-            LoopOmpAttributes[loopindex].ForStmtToPetit[i].str = LoopOmpAttributes[loopindex].ForStmtToPetit[i].str.replacer(
+            LoopOmpAttributes[loopindex].ForStmtToPetit[i].str = LoopOmpAttributes[loopindex].ForStmtToPetit[i].str.replace(
                 replace_var,
                 replace_var.substr(1)
             );

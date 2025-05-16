@@ -34,12 +34,22 @@ export interface LoopOmpAttribute {
     DepPetitFileName?: string | null,
     DepArrays?: string[],
     varAccess?: VarAccess[],
-    ForStmtToPetit?: any[],
+    ForStmtToPetit?: ForStmtToPetit[],
     petit_variables: string[],
     petit_arrays?: Record<string, any>,
     petit_loop_indices: string[]
 }
 
+export interface ForStmtToPetit {
+    line: number;
+    str: string;
+    order?: number;
+    parentlooprank?: string;
+    IsdependentCurrentloop?: boolean;
+    IsdependentInnerloop?: boolean;
+    IsdependentOuterloop?: boolean;
+  }
+  
 export interface InitVardecl {
     name : string,
     astId : string,

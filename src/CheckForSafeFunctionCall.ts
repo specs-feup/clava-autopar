@@ -1,101 +1,135 @@
+import Clava from "@specs-feup/clava/api/clava/Clava.js";
+import CodeInserter from "@specs-feup/clava/api/clava/util/CodeInserter.js";
+import Io from "@specs-feup/lara/api/lara/Io.js";
+import Query from "@specs-feup/lara/api/weaver/Query.js";
+import { safefunctionCallslist } from "./SafeFunctionCalls.js";
+import {
+    Loop,
+    Joinpoint,
+    If,
+    ArrayAccess,
+    Continue,
+    MemberAccess,
+    Varref,
+    Call,
+    FileJp,
+    FunctionJp,
+    Body,
+} from "@specs-feup/clava/api/Joinpoints.js";
+
 /**************************************************************
-* 
-*                       checkForSafeFunctionCall
-* 
-**************************************************************/
-aspectdef CheckForSafeFunctionCall
-
-    var new_safefunctionCallslist = [];
-    
-    select file.function end
-    apply
-        if ( new_safefunctionCallslist.indexOf($function.name) === -1)
-            new_safefunctionCallslist.push($function.name);
-    end
-    condition $function.params.length > 0 end 
-
-    select file.function.call end
-    apply
-        new_safefunctionCallslist.splice(new_safefunctionCallslist.indexOf($function.name),1);
-    end
-    condition new_safefunctionCallslist.indexOf($function.name) !== -1  end
-
-
-    select file.function.body.arrayAccess end
-    apply
-        if($arrayAccess.use.indexOf('write') === -1) {
-            continue;
+ *
+ *                       checkForSafeFunctionCall
+ *
+ **************************************************************/
+export function CheckForSafeFunctionCall() {
+    const new_safefunctionCallslist: string[] = [];
+    for (const $function of Query.search(FileJp).search(FunctionJp)) {
+        if ($function.params.length > 0) {
+            if (new_safefunctionCallslist.indexOf($function.name) == -1)
+                new_safefunctionCallslist.push($function.name);
         }
-        
-        var currentRegion = $arrayAccess.arrayVar.getDescendantsAndSelf('varref')[0].vardecl.currentRegion;
-        if((currentRegion !== undefined && currentRegion.joinPointType === 'file')
-            || $arrayAccess.arrayVar.getDescendantsAndSelf('varref')[0].vardecl.isParam) {
-            
-            new_safefunctionCallslist.splice(new_safefunctionCallslist.indexOf($function.name),1);
+    }
+    for (const chain of Query.search(FileJp)
+        .search(FunctionJp)
+        .search(Call)
+        .chain()) {
+        const $function = chain["function"] as FunctionJp;
+        if (new_safefunctionCallslist.indexOf($function.name) != -1) {
+            new_safefunctionCallslist.splice(
+                new_safefunctionCallslist.indexOf($function.name),
+                1
+            );
         }
-        
-/*
-        if (
-            $arrayAccess.use.indexOf('write') !== -1 && 
-                (
-                    $arrayAccess.arrayVar.getDescendantsAndSelf('varref')[0].vardecl.currentRegion.joinPointType === 'file'
-                    ||
-                    $arrayAccess.arrayVar.getDescendantsAndSelf('varref')[0].vardecl.isParam
-                )
-            )
-            new_safefunctionCallslist.splice(new_safefunctionCallslist.indexOf($function.name),1);
-*/			
-    end
-    condition new_safefunctionCallslist.indexOf($function.name) !== -1 end
+    }
 
-    select file.function.body.memberAccess end
-    apply
-        if($memberAccess.use.indexOf('write') === -1) {
-            continue;
+    for (const $function of Query.search(FileJp).search(FunctionJp)) {
+        for (const $arrayAccess of Query.searchFrom(
+            $function.body,
+            ArrayAccess
+        )) {
+            if (new_safefunctionCallslist.indexOf($function.name) != -1) {
+                if ($arrayAccess.use.indexOf("write") == -1) {
+                    continue;
+                }
+
+                let currentRegion : Joinpoint = (
+                    $arrayAccess.arrayVar.getDescendantsAndSelf(
+                        "varref"
+                    )[0] as Varref
+                ).vardecl.currentRegion;
+                if (
+                    (currentRegion != undefined &&
+                        currentRegion.joinPointType == "file") ||
+                    (
+                        $arrayAccess.arrayVar.getDescendantsAndSelf(
+                            "varref"
+                        )[0] as Varref
+                    ).vardecl.isParam
+                ) {
+                    new_safefunctionCallslist.splice(
+                        new_safefunctionCallslist.indexOf($function.name),
+                        1
+                    );
+                }
+            }
         }
-        
-        var currentRegion = $memberAccess.getDescendantsAndSelf('varref')[0].vardecl.currentRegion;
-        if(currentRegion !== undefined && currentRegion.joinPointType === 'file') {
-            new_safefunctionCallslist.splice(new_safefunctionCallslist.indexOf($function.name),1);
+    }
+
+    for (const $function of Query.search(FileJp).search(FunctionJp)) {
+        for (const $memberAccess of Query.searchFrom(
+            $function.body,
+            MemberAccess
+        )) {
+            if (new_safefunctionCallslist.indexOf($function.name) != -1) {
+                if ($memberAccess.use.indexOf("write") == -1) {
+                    continue;
+                }
+
+                let currentRegion : Joinpoint = (
+                    $memberAccess.getDescendantsAndSelf("varref")[0] as Varref
+                ).vardecl.currentRegion;
+                if (
+                    currentRegion !== undefined &&
+                    currentRegion.joinPointType === "file"
+                ) {
+                    new_safefunctionCallslist.splice(
+                        new_safefunctionCallslist.indexOf($function.name),
+                        1
+                    );
+                }
+            }
         }
-        
-    /*
-        if (
-            $memberAccess.use.indexOf('write') !== -1 &&
-            $memberAccess.getDescendantsAndSelf('varref')[0].vardecl.currentRegion.joinPointType === 'file'
-            )
-            new_safefunctionCallslist.splice(new_safefunctionCallslist.indexOf($function.name),1);		
-    */
-    end
-    condition new_safefunctionCallslist.indexOf($function.name) !== -1 end
+    }
 
+    for (const $function of Query.search(FileJp).search(FunctionJp)) {
+        for (const $varref of Query.searchFrom($function.body, Varref)) {
+            if (new_safefunctionCallslist.indexOf($function.name) != -1) {
+                if ($varref.useExpr.use.indexOf("write") == -1) {
+                    continue;
+                }
 
-    select file.function.body.varref end
-    apply
-        if($varref.useExpr.use.indexOf('write') === -1){
-            continue;
+                let currentRegion : Joinpoint = $varref.vardecl.currentRegion;
+                if (
+                    currentRegion != undefined &&
+                    currentRegion.joinPointType == "file"
+                ) {
+                    new_safefunctionCallslist.splice(
+                        new_safefunctionCallslist.indexOf($function.name),
+                        1
+                    );
+                }
+            }
         }
-    
-        var currentRegion = $varref.vardecl.currentRegion;
-        if(currentRegion !== undefined && currentRegion.joinPointType === 'file') {
-            new_safefunctionCallslist.splice(new_safefunctionCallslist.indexOf($function.name),1);
-        }
-        /*
-        if (
-            $varref.useExpr.use.indexOf('write') !== -1 &&
-            $varref.vardecl.currentRegion.joinPointType === 'file'
-            )
-            new_safefunctionCallslist.splice(new_safefunctionCallslist.indexOf($function.name),1);		
-        */
-    end
-    condition new_safefunctionCallslist.indexOf($function.name) !== -1 end
+    }
 
-    select file end
-    apply
-        $file.insertBegin('//new_safefunctionCallslist : ' + new_safefunctionCallslist.join(' , '));
-    end
-
+    for (const $file of Query.search(FileJp)) {
+        $file.insertBegin(
+            "//new_safefunctionCallslist : " +
+                new_safefunctionCallslist.join(" , ")
+        );
+    }
+    //erro aqui por ser const
     if (new_safefunctionCallslist.length > 0)
-        safefunctionCallslist = safefunctionCallslist.concat(new_safefunctionCallslist);
-
-end
+        safefunctionCallslist.push(...new_safefunctionCallslist);
+}

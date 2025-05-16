@@ -33,9 +33,23 @@ export interface LoopOmpAttribute {
     Reduction_listVars?: any[],
     DepPetitFileName?: string | null,
     DepArrays?: string[],
-    varAccess: VarAccess[]
+    varAccess: VarAccess[],
+    ForStmtToPetit?: ForStmtToPetit[],
+    petit_variables: string[],
+    petit_arrays?: Record<string, { name: string; size: string }>,
+    petit_loop_indices: string[]
 }
 
+export interface ForStmtToPetit {
+    line: number;
+    str: string;
+    order?: number;
+    parentlooprank?: string;
+    IsdependentCurrentloop?: boolean;
+    IsdependentInnerloop?: boolean;
+    IsdependentOuterloop?: boolean;
+  }
+  
 export interface InitVardecl {
     name : string,
     astId : string,
@@ -70,6 +84,8 @@ export default function checkForOpenMPCanonicalForm($ForStmt: Loop) {
         astId:  $ForStmt.astId,
         loopindex:  loopindex,
         varAccess: [],
+        petit_variables: [],
+        petit_loop_indices: []
     };
 
 

@@ -13,6 +13,36 @@ import { allReplace } from "./allReplace.js";
 import Add_msgError from "./Add_msgError.js";
 import { LoopOmpAttributes } from "./checkForOpenMPCanonicalForm.js";
 
+export interface DependencyObject {
+    depType: string;
+    src: number;
+    dst: number;
+    ArrayName: string;
+    varName: string;
+    depVector: string[];
+    subscriptNumber: number;
+    depStatus: string;
+    src_usge: string;
+    dst_usge: string;
+
+    parentlooprank_src: string | undefined;
+    parentlooprank_dst: string | undefined;
+
+    IsdependentCurrentloop_src: boolean | undefined;
+    IsdependentInnerloop_src: boolean | undefined;
+    IsdependentOuterloop_src: boolean | undefined;
+
+    IsdependentCurrentloop_dst: boolean | undefined;
+    IsdependentInnerloop_dst: boolean | undefined;
+    IsdependentOuterloop_dst: boolean | undefined;
+
+    varref_line_src: number;
+    varref_line_dst: number;
+
+    cannotbesolved: boolean;
+    canbeignored: boolean;
+}
+
 export default function ExecPetitDependencyTest($ForStmt: Loop) {
     const loopindex = GetLoopIndex($ForStmt);
     if (LoopOmpAttributes[loopindex].msgError?.length !== 0) return;
@@ -37,9 +67,7 @@ export default function ExecPetitDependencyTest($ForStmt: Loop) {
 
     const petit_input_file = [];
     for (const element of LoopOmpAttributes[loopindex].ForStmtToPetit)
-        petit_input_file.push(
-            element.str
-        );
+        petit_input_file.push(element.str);
 
     Io.writeFile(
         LoopOmpAttributes[loopindex].petitInputFileAddress,
@@ -105,7 +133,7 @@ export default function ExecPetitDependencyTest($ForStmt: Loop) {
                     );
                 })[0];
 
-                const depObj = {
+                const depObj: DependencyObject = {
                     depType: outputLine[0],
                     src: Number(outputLine[1]),
                     dst: Number(outputLine[3]),

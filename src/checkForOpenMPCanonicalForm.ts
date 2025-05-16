@@ -36,7 +36,7 @@ export interface LoopOmpAttribute {
     varAccess?: VarAccess[],
     ForStmtToPetit?: ForStmtToPetit[],
     petit_variables: string[],
-    petit_arrays?: Record<string, any>,
+    petit_arrays?: Record<string, { name: string; size: string }>,
     petit_loop_indices: string[]
 }
 

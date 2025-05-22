@@ -17,7 +17,7 @@ import Query from "@specs-feup/lara/api/weaver/Query.js";
 * 
 **************************************************************/
 export default function AddOpenMPDirectivesForLoop($ForStmt: Loop) {
-    let loopindex = GetLoopIndex($ForStmt);
+    const loopindex = GetLoopIndex($ForStmt);
 
     if (typeof LoopOmpAttributes[loopindex] === "undefined") {
         return;
@@ -107,150 +107,150 @@ export default function AddOpenMPDirectivesForLoop($ForStmt: Loop) {
     }
 }
 
-function ret_IF_Clause($ForStmt: Loop) {
-    const loopindex = GetLoopIndex($ForStmt);
-    const loopControlVarname = LoopOmpAttributes[loopindex].loopControlVarname;
-    let IF_Clause_str = "if(abs(";
+// function ret_IF_Clause($ForStmt: Loop) {
+//     const loopindex = GetLoopIndex($ForStmt);
+//     const loopControlVarname = LoopOmpAttributes[loopindex].loopControlVarname;
+//     let IF_Clause_str = "if(abs(";
 
-    let cloneJP = null;
+//     let cloneJP = null;
 
-    const $init = $ForStmt.init;
+//     const $init = $ForStmt.init;
 
-    for (const $cast of $init.getDescendantsAndSelf("vardecl")) {
-        cloneJP = ($cast as Vardecl).init.copy();
-        break;
-    }
-    for (const $cast of $init.getDescendantsAndSelf("binaryOp")) {
-        cloneJP = ($cast as BinaryOp).right.copy();
-        break;
-    }
+//     for (const $cast of $init.getDescendantsAndSelf("vardecl")) {
+//         cloneJP = ($cast as Vardecl).init.copy();
+//         break;
+//     }
+//     for (const $cast of $init.getDescendantsAndSelf("binaryOp")) {
+//         cloneJP = ($cast as BinaryOp).right.copy();
+//         break;
+//     }
 
-    if (cloneJP) {
-        for (const $cast of cloneJP.getDescendantsAndSelf("cast")) {
-            const child = $cast.getChild(0);
-            $cast.replaceWith(child);
-        }
+//     if (cloneJP) {
+//         for (const $cast of cloneJP.getDescendantsAndSelf("cast")) {
+//             const child = $cast.getChild(0);
+//             $cast.replaceWith(child);
+//         }
 
-        for (const $cast of cloneJP.getDescendantsAndSelf("unaryOp")) {
-            const child = $cast.getChild(0);
-            $cast.replaceWith(child);
-        }
+//         for (const $cast of cloneJP.getDescendantsAndSelf("unaryOp")) {
+//             const child = $cast.getChild(0);
+//             $cast.replaceWith(child);
+//         }
 
-        IF_Clause_str += cloneJP.code + " - ";
-    } else throw new Error("cloneJP not defined");
+//         IF_Clause_str += cloneJP.code + " - ";
+//     } else throw new Error("cloneJP not defined");
 
-    cloneJP = null;
-    let binaryOpleft = null;
-    let binaryOpRight = null;
-    for (const $ForStmt of Query.search(Loop)) {
-        const $binaryOp = Query.searchFrom($ForStmt.cond, BinaryOp).getFirst();
-        if ($binaryOp) {
-            binaryOpleft = $binaryOp.left.copy();
-            binaryOpRight = $binaryOp.right.copy();
-        }
-        break;
-    }
-    let foundflag = false;
-    if (binaryOpleft) {
-        for (const $cast of binaryOpleft.getDescendantsAndSelf("varref"))
-            if (($cast as Varref).name === loopControlVarname) {
-                cloneJP = binaryOpRight;
-                foundflag = true;
-            }
-    } else throw new Error("binaryOpleft not defined");
+//     cloneJP = null;
+//     let binaryOpleft = null;
+//     let binaryOpRight = null;
+//     for (const $ForStmt of Query.search(Loop)) {
+//         const $binaryOp = Query.searchFrom($ForStmt.cond, BinaryOp).getFirst();
+//         if ($binaryOp) {
+//             binaryOpleft = $binaryOp.left.copy();
+//             binaryOpRight = $binaryOp.right.copy();
+//         }
+//         break;
+//     }
+//     let foundflag = false;
+//     if (binaryOpleft) {
+//         for (const $cast of binaryOpleft.getDescendantsAndSelf("varref"))
+//             if (($cast as Varref).name === loopControlVarname) {
+//                 cloneJP = binaryOpRight;
+//                 foundflag = true;
+//             }
+//     } else throw new Error("binaryOpleft not defined");
 
-    if (foundflag === false) cloneJP = binaryOpleft;
+//     if (foundflag === false) cloneJP = binaryOpleft;
 
-    if (cloneJP) {
-        for (const $cast of cloneJP.getDescendantsAndSelf("cast")) {
-            const child = $cast.getChild(0);
-            $cast.replaceWith(child);
-        }
-        for (const $cast of cloneJP.getDescendantsAndSelf("unaryOp")) {
-            const child = $cast.getChild(0);
-            $cast.replaceWith(child);
-        }
+//     if (cloneJP) {
+//         for (const $cast of cloneJP.getDescendantsAndSelf("cast")) {
+//             const child = $cast.getChild(0);
+//             $cast.replaceWith(child);
+//         }
+//         for (const $cast of cloneJP.getDescendantsAndSelf("unaryOp")) {
+//             const child = $cast.getChild(0);
+//             $cast.replaceWith(child);
+//         }
 
-        IF_Clause_str += cloneJP.code;
-        IF_Clause_str += ")>500)";
-    } else throw Error("cloneJP not defined");
+//         IF_Clause_str += cloneJP.code;
+//         IF_Clause_str += ")>500)";
+//     } else throw Error("cloneJP not defined");
 
-    return IF_Clause_str;
-}
+//     return IF_Clause_str;
+// }
 
-function ret_NUM_THREADS_Clause($ForStmt: Loop) {
-    const loopindex = GetLoopIndex($ForStmt);
-    const loopControlVarname = LoopOmpAttributes[loopindex].loopControlVarname;
-    let NUM_THREADS_Clause_str = "num_threads((abs(";
+// function ret_NUM_THREADS_Clause($ForStmt: Loop) {
+//     const loopindex = GetLoopIndex($ForStmt);
+//     const loopControlVarname = LoopOmpAttributes[loopindex].loopControlVarname;
+//     let NUM_THREADS_Clause_str = "num_threads((abs(";
 
-    let cloneJP = null;
+//     let cloneJP = null;
 
-    for (const $ForStmt of Query.search(Loop, { kind: "for" })) {
-        let $cast = $ForStmt.init.getDescendantsAndSelf("vardecl")[0]; // if for(int i = ... )
-        if ($cast) {
-            cloneJP = ($cast as Vardecl).init.copy();
-            break;
-        }
+//     for (const $ForStmt of Query.search(Loop, { kind: "for" })) {
+//         let $cast = $ForStmt.init.getDescendantsAndSelf("vardecl")[0]; // if for(int i = ... )
+//         if ($cast) {
+//             cloneJP = ($cast as Vardecl).init.copy();
+//             break;
+//         }
 
-        $cast = $ForStmt.init.getDescendantsAndSelf("binaryOp")[0]; // if for(i = ... )
-        if ($cast) {
-            cloneJP = ($cast as BinaryOp).right.copy();
-            break;
-        }
-    }
+//         $cast = $ForStmt.init.getDescendantsAndSelf("binaryOp")[0]; // if for(i = ... )
+//         if ($cast) {
+//             cloneJP = ($cast as BinaryOp).right.copy();
+//             break;
+//         }
+//     }
 
-    if (cloneJP) {
-        for (const $cast of cloneJP.getDescendantsAndSelf("cast")) {
-            const child = $cast.getChild(0);
-            $cast.replaceWith(child);
-        }
+//     if (cloneJP) {
+//         for (const $cast of cloneJP.getDescendantsAndSelf("cast")) {
+//             const child = $cast.getChild(0);
+//             $cast.replaceWith(child);
+//         }
 
-        for (const $cast of cloneJP.getDescendantsAndSelf("unaryOp")) {
-            const child = $cast.getChild(0);
-            $cast.replaceWith(child);
-        }
+//         for (const $cast of cloneJP.getDescendantsAndSelf("unaryOp")) {
+//             const child = $cast.getChild(0);
+//             $cast.replaceWith(child);
+//         }
 
-        NUM_THREADS_Clause_str += cloneJP.code + " - ";
-    } else {
-        throw new Error("cloneJP is not defined");
-    }
+//         NUM_THREADS_Clause_str += cloneJP.code + " - ";
+//     } else {
+//         throw new Error("cloneJP is not defined");
+//     }
 
-    cloneJP = null;
-    let binaryOpleft = null;
-    let binaryOpRight = null;
-    for (const $ForStmt of Query.search(Loop)) {
-        const $binaryOp = Query.searchFrom($ForStmt.cond, BinaryOp).getFirst();
-        if ($binaryOp) {
-            binaryOpleft = $binaryOp.left.copy();
-            binaryOpRight = $binaryOp.right.copy();
-        }
-        break;
-    }
+//     cloneJP = null;
+//     let binaryOpleft = null;
+//     let binaryOpRight = null;
+//     for (const $ForStmt of Query.search(Loop)) {
+//         const $binaryOp = Query.searchFrom($ForStmt.cond, BinaryOp).getFirst();
+//         if ($binaryOp) {
+//             binaryOpleft = $binaryOp.left.copy();
+//             binaryOpRight = $binaryOp.right.copy();
+//         }
+//         break;
+//     }
 
-    let foundflag = false;
-    if (binaryOpleft) {
-        for (const $cast of binaryOpleft.getDescendantsAndSelf("varref"))
-            if (($cast as Varref).name === loopControlVarname) {
-                cloneJP = binaryOpRight;
-                foundflag = true;
-            }
-    } else throw new Error("binaryOpleft not defined");
+//     let foundflag = false;
+//     if (binaryOpleft) {
+//         for (const $cast of binaryOpleft.getDescendantsAndSelf("varref"))
+//             if (($cast as Varref).name === loopControlVarname) {
+//                 cloneJP = binaryOpRight;
+//                 foundflag = true;
+//             }
+//     } else throw new Error("binaryOpleft not defined");
 
-    if (foundflag === false) cloneJP = binaryOpleft;
+//     if (foundflag === false) cloneJP = binaryOpleft;
 
-    if (cloneJP) {
-        for (const $cast of cloneJP.getDescendantsAndSelf("cast")) {
-            const child = $cast.getChild(0);
-            $cast.replaceWith(child);
-        }
-        for (const $cast of cloneJP.getDescendantsAndSelf("unaryOp")) {
-            const child = $cast.getChild(0);
-            $cast.replaceWith(child);
-        }
+//     if (cloneJP) {
+//         for (const $cast of cloneJP.getDescendantsAndSelf("cast")) {
+//             const child = $cast.getChild(0);
+//             $cast.replaceWith(child);
+//         }
+//         for (const $cast of cloneJP.getDescendantsAndSelf("unaryOp")) {
+//             const child = $cast.getChild(0);
+//             $cast.replaceWith(child);
+//         }
 
-        NUM_THREADS_Clause_str += cloneJP.code;
-        NUM_THREADS_Clause_str += ")<500)?1:omp_get_max_threads())";
-    } else throw new Error("cloneJP not defined");
+//         NUM_THREADS_Clause_str += cloneJP.code;
+//         NUM_THREADS_Clause_str += ")<500)?1:omp_get_max_threads())";
+//     } else throw new Error("cloneJP not defined");
 
-    return NUM_THREADS_Clause_str;
-}
+//     return NUM_THREADS_Clause_str;
+// }

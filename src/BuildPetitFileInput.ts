@@ -3,9 +3,9 @@
  *                       BuildPetitFileInput
  *
  **************************************************************/
-import get_varTypeAccess from "./get_varTypeAccess.js";
+//import get_varTypeAccess from "./get_varTypeAccess.js";
+//a
 import {
-    FunctionJp,
     Loop,
     Expression,
     BinaryOp,
@@ -25,8 +25,8 @@ import { VarAccess } from "./SetVariableAccess.js";
 import  { moveBracketsToEnd3 }  from './allReplace.js'; 
 
 export default function BuildPetitFileInput($ForStmt: Loop) {
-    let replace_vars: string[] = [];
-    let loopindex: string = GetLoopIndex($ForStmt);
+    const replace_vars: string[] = [];
+    const loopindex: string = GetLoopIndex($ForStmt);
 
     if (LoopOmpAttributes[loopindex].msgError.length !== 0) return;
 
@@ -37,7 +37,7 @@ export default function BuildPetitFileInput($ForStmt: Loop) {
 
     LoopOmpAttributes[loopindex].petit_variables.push("petit_tmp");
 
-    let varreflist: VarAccess[] = SearchStruct(
+    const varreflist: VarAccess[] = SearchStruct(
         LoopOmpAttributes[loopindex].varAccess ?? [],
         { varTypeAccess: "varref" }
     );
@@ -106,21 +106,21 @@ export default function BuildPetitFileInput($ForStmt: Loop) {
         }
     }
 
-    let candidateArraylist: VarAccess[] = SearchStruct(
+    const candidateArraylist: VarAccess[] = SearchStruct(
         LoopOmpAttributes[loopindex].varAccess ?? [],
         { usedInClause: false, hasDescendantOfArrayAccess: true }
     );
 
     let oder = 0;
     for (let i = 0; i < candidateArraylist.length; i++) {
-        let varObj = candidateArraylist[i];
+        const varObj = candidateArraylist[i];
 
         if (varObj.use.indexOf("W") === -1 || varObj.sendtoPetit === false)
             continue;
 
         for (let j = 0; j < varObj.varUsage.length; j++)
             if (varObj.varUsage[j].isInsideLoopHeader === false) {
-                let tabOP = Array(
+                const tabOP = Array(
                     varObj.varUsage[j].parentlooprank.length
                 ).join("\t");
                 if (varObj.varUsage[j].use === "R") {
@@ -242,7 +242,7 @@ export default function BuildPetitFileInput($ForStmt: Loop) {
     });
 
     let count = 1;
-    let replaceloopindices: Record<string, { rep: string }> = {};
+    const replaceloopindices: Record<string, { rep: string }> = {};
     for (const loopindices of LoopOmpAttributes[loopindex].petit_loop_indices)
         if (loopindices.length > 5) {
             replaceloopindices[loopindices] = {
@@ -292,7 +292,7 @@ export function CovertLoopToPetitForm($ForStmt: Loop, tabOP: string[]) {
         throw message;
     }
 
-    let loopControlVarname = loopAttributes.loopControlVarname;
+    const loopControlVarname = loopAttributes.loopControlVarname;
 
     let cloneJP = null;
 

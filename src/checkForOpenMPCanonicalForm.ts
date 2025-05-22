@@ -11,33 +11,37 @@ import Add_msgError from "./Add_msgError.js";
 import checkForInvalidStmts from "./checkForInvalidStmts.js";
 import Strings from "@specs-feup/lara/api/lara/Strings.js";
 import { VarAccess } from "./SetVariableAccess.js";
+import { DependencyObject } from "./ExecPetitDependencyTest.js";
 
 export interface LoopOmpAttribute {
-    msgError: string[],
-    astId?: string,
-    loopindex?: string,
-    innerloopsControlVarname?: string[]
-    loopControlVarname?: string,
-    loopControlVarastId?: string,
-    start?: number,
-    end?: number,
-    hasOpenMPCanonicalForm?: boolean,
-    setp?: string | null,
-    initValue?:string,
-    endValue?: string,
-    privateVars?: any[],
-    firstprivateVars?: any[],
-    lastprivateVars?: any[],
-    Reduction?: any[],
-    threadprivate?: any[],
-    Reduction_listVars?: any[],
-    DepPetitFileName?: string | null,
-    DepArrays?: string[],
-    varAccess?: VarAccess[],
-    ForStmtToPetit?: ForStmtToPetit[],
-    petit_variables: string[],
-    petit_arrays?: Record<string, { name: string; size: string }>,
-    petit_loop_indices: string[]
+    msgError: string[];
+    astId?: string;
+    loopindex?: string;
+    innerloopsControlVarname?: string[];
+    loopControlVarname?: string;
+    loopControlVarastId?: string;
+    start?: number;
+    end?: number;
+    hasOpenMPCanonicalForm?: boolean;
+    setp?: string | null;
+    initValue?: string;
+    endValue?: string;
+    privateVars?: any[];
+    firstprivateVars: string[];
+    lastprivateVars?: string[];
+    Reduction?: any[];
+    threadprivate?: any[];
+    Reduction_listVars?: any[];
+    DepPetitFileName?: string | null;
+    DepArrays?: string[];
+    varAccess: VarAccess[];
+    ForStmtToPetit: ForStmtToPetit[];
+    petit_variables: string[];
+    petit_arrays?: Record<string, { name: string; size: string }>;
+    petit_loop_indices: string[];
+    PetitFoundDependency: DependencyObject[];
+    petitInputFileAddress: string;
+    petitOutputFileAddress: string;
 }
 
 export interface ForStmtToPetit {
@@ -71,7 +75,7 @@ export const LoopOmpAttributes: Record<string, LoopOmpAttribute> = {};
 
 export default function checkForOpenMPCanonicalForm($ForStmt: Loop) {
 
-    var loopindex = GetLoopIndex($ForStmt);
+    const loopindex = GetLoopIndex($ForStmt);
 
 
     // check if $ForStmt has been checked for Canonical Form or not	
@@ -80,9 +84,17 @@ export default function checkForOpenMPCanonicalForm($ForStmt: Loop) {
 
     // create LoopOmpAttributes structure for current $ForStmt
     LoopOmpAttributes[loopindex] = {
-        msgError:  [],
-        astId:  $ForStmt.astId,
-        loopindex:  loopindex,
+        msgError: [],
+        astId: $ForStmt.astId,
+        loopindex: loopindex,
+        varAccess: [],
+        petit_variables: [],
+        petit_loop_indices: [],
+        PetitFoundDependency: [],
+        petitOutputFileAddress: "",
+        petitInputFileAddress: "",
+        ForStmtToPetit: [],
+        firstprivateVars: [],
     };
 
 

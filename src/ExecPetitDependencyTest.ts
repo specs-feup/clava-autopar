@@ -13,6 +13,36 @@ import { allReplace } from "./allReplace.js";
 import Add_msgError from "./Add_msgError.js";
 import { LoopOmpAttributes } from "./checkForOpenMPCanonicalForm.js";
 
+export interface DependencyObject {
+    depType: string;
+    src: number;
+    dst: number;
+    ArrayName: string;
+    varName: string;
+    depVector: string[];
+    subscriptNumber: number;
+    depStatus: string;
+    src_usge: string;
+    dst_usge: string;
+
+    parentlooprank_src: string | undefined;
+    parentlooprank_dst: string | undefined;
+
+    IsdependentCurrentloop_src: boolean | undefined;
+    IsdependentInnerloop_src: boolean | undefined;
+    IsdependentOuterloop_src: boolean | undefined;
+
+    IsdependentCurrentloop_dst: boolean | undefined;
+    IsdependentInnerloop_dst: boolean | undefined;
+    IsdependentOuterloop_dst: boolean | undefined;
+
+    varref_line_src: number;
+    varref_line_dst: number;
+
+    cannotbesolved: boolean;
+    canbeignored: boolean;
+}
+
 export default function ExecPetitDependencyTest($ForStmt: Loop) {
     const loopindex = GetLoopIndex($ForStmt);
     if (LoopOmpAttributes[loopindex].msgError?.length !== 0) return;
@@ -22,7 +52,7 @@ export default function ExecPetitDependencyTest($ForStmt: Loop) {
         "/Petitdeploop#" +
         $ForStmt.line +
         "[" +
-        ($ForStmt.getAstAncestor("FunctionDecl") as FunctionJp).name +
+        ($ForStmt.getAncestor("FunctionDecl") as FunctionJp).name +
         "]" +
         ".t";
 
@@ -31,15 +61,13 @@ export default function ExecPetitDependencyTest($ForStmt: Loop) {
         "/Petitdeploop#" +
         $ForStmt.line +
         "[" +
-        ($ForStmt.getAstAncestor("FunctionDecl") as FunctionJp).name +
+        ($ForStmt.getAncestor("FunctionDecl") as FunctionJp).name +
         "]" +
         "_output.t";
 
     const petit_input_file = [];
     for (const element of LoopOmpAttributes[loopindex].ForStmtToPetit)
-        petit_input_file.push(
-            element.str
-        );
+        petit_input_file.push(element.str);
 
     Io.writeFile(
         LoopOmpAttributes[loopindex].petitInputFileAddress,
@@ -96,16 +124,23 @@ export default function ExecPetitDependencyTest($ForStmt: Loop) {
                     .join(" ")
                     .split(" ");
 
+                const petit_arrays:
+                    | Record<string, { name: string; size: string }>
+                    | undefined = LoopOmpAttributes[loopindex].petit_arrays;
+                if (petit_arrays === undefined) {
+                    throw new Error(
+                        "LoopOmpAttributes[loopindex].petit_arrays undefined"
+                    );
+                }
                 const varName = Object.keys(
-                    LoopOmpAttributes[loopindex].petit_arrays
+                    LoopOmpAttributes[loopindex].petit_arrays as any
                 ).filter(function (key) {
                     return (
-                        LoopOmpAttributes[loopindex].petit_arrays[key].name ===
-                        outputLine[2].split("(")[0]
+                        petit_arrays[key].name === outputLine[2].split("(")[0]
                     );
                 })[0];
 
-                const depObj = {
+                const depObj: DependencyObject = {
                     depType: outputLine[0],
                     src: Number(outputLine[1]),
                     dst: Number(outputLine[3]),
@@ -194,7 +229,9 @@ export default function ExecPetitDependencyTest($ForStmt: Loop) {
                 ) {
                     depObj.canbeignored = true;
                 }
-
+                if (depObj.parentlooprank_dst === undefined) {
+                    throw new Error("depObj.parentlooprank_dst is undefined");
+                }
                 if (
                     (depObj.depVector[0] === "0" &&
                         depObj.src_usge === depObj.dst_usge) ||

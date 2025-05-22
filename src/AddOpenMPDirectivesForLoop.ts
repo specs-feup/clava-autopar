@@ -5,7 +5,7 @@ import {
 import { LoopOmpAttributes } from "./checkForOpenMPCanonicalForm.js";
 import GetLoopIndex from "./GetLoopIndex.js";
 import { OmpPragmas } from "./Parallelize.js";
-import Query from "@specs-feup/lara/api/weaver/Query.js";
+//import Query from "@specs-feup/lara/api/weaver/Query.js";
 
 /**************************************************************
 /**************************************************************

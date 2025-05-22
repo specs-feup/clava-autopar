@@ -27,7 +27,7 @@ export interface LoopOmpAttribute {
     initValue?: string;
     endValue?: string;
     privateVars?: any[];
-    firstprivateVars?: string[];
+    firstprivateVars: string[];
     lastprivateVars?: string[];
     Reduction?: any[];
     threadprivate?: any[];
@@ -35,11 +35,13 @@ export interface LoopOmpAttribute {
     DepPetitFileName?: string | null;
     DepArrays?: string[];
     varAccess: VarAccess[];
-    ForStmtToPetit?: ForStmtToPetit[];
+    ForStmtToPetit: ForStmtToPetit[];
     petit_variables: string[];
     petit_arrays?: Record<string, { name: string; size: string }>;
     petit_loop_indices: string[];
-    PetitFoundDependency: DependencyObject[]
+    PetitFoundDependency: DependencyObject[];
+    petitInputFileAddress: string;
+    petitOutputFileAddress: string;
 }
 
 export interface ForStmtToPetit {
@@ -82,13 +84,17 @@ export default function checkForOpenMPCanonicalForm($ForStmt: Loop) {
 
     // create LoopOmpAttributes structure for current $ForStmt
     LoopOmpAttributes[loopindex] = {
-        msgError:  [],
-        astId:  $ForStmt.astId,
-        loopindex:  loopindex,
+        msgError: [],
+        astId: $ForStmt.astId,
+        loopindex: loopindex,
         varAccess: [],
         petit_variables: [],
         petit_loop_indices: [],
-        PetitFoundDependency: []
+        PetitFoundDependency: [],
+        petitOutputFileAddress: "",
+        petitInputFileAddress: "",
+        ForStmtToPetit: [],
+        firstprivateVars: [],
     };
 
 

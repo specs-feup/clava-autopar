@@ -5,12 +5,19 @@
  **************************************************************/
 
 import Query from "@specs-feup/lara/api/weaver/Query.js";
-import { BinaryOp, Body, Expression, Loop, UnaryOp } from "@specs-feup/clava/api/Joinpoints.js";
+import {
+    BinaryOp,
+    Body,
+    Expression,
+    Loop,
+    UnaryOp,
+} from "@specs-feup/clava/api/Joinpoints.js";
 import GetLoopIndex from "./GetLoopIndex.js";
 import SearchStruct from "./SearchStruct.js";
 import { orderedVarrefs3 } from "./orderedVarrefs3.js";
 import { LoopOmpAttributes } from "./checkForOpenMPCanonicalForm.js";
 import JoinPoints from "@specs-feup/lara/api/weaver/JoinPoints.js";
+import { VarAccess } from "./SetVariableAccess.js";
 
 export default function checkvarreReduction($ForStmt: Loop) {
     let Reduction: string[] = [];
@@ -55,6 +62,7 @@ export default function checkvarreReduction($ForStmt: Loop) {
                     candidateVar = element;
                     break;
                 }
+            if (candidateVar === null) throw new Error("candidateVar is null");
 
             const o = retReductionOpVar($expr, candidateVar);
             Reduction = Reduction.concat(o);
@@ -70,7 +78,7 @@ export default function checkvarreReduction($ForStmt: Loop) {
  *                       retReductionOpVar
  *
  **************************************************************/
-function retReductionOpVar($expr: Expression) {
+function retReductionOpVar($expr: Expression, candidateVar: VarAccess) {
     const Reduction: string[] = [];
 
     const exprvarrefset = orderedVarrefs3($expr);
@@ -100,10 +108,10 @@ function retReductionOpVar($expr: Expression) {
                         : "");
             if (
                 op === "sub" &&
-                typeof (element.getAncestor("binaryOp") as BinaryOp).right.vardecl !==
-                    "undefined" &&
-                (element.getAncestor("binaryOp") as BinaryOp).right.vardecl.name ===
-                    candidateVar.name
+                typeof (element.getAncestor("binaryOp") as BinaryOp).right
+                    .vardecl !== "undefined" &&
+                (element.getAncestor("binaryOp") as BinaryOp).right.vardecl
+                    .name === candidateVar.name
             ) {
                 candidateVarOp = [];
                 break; // x = expr - x  not acceptable
@@ -115,7 +123,10 @@ function retReductionOpVar($expr: Expression) {
         }
     }
 
-    let op = "";
+    let op: string | null = null;
+    if (candidateVarOp[0] === null) {
+        throw new Error("candidateVarOp[0] is null");
+    }
     if (candidateVarOp.length == 1) {
         op = candidateVarOp[0];
     } else if (
@@ -139,6 +150,7 @@ function retReductionOpVar($expr: Expression) {
     }
 
     let findOpflag = true;
+
     if (["pre_dec", "post_dec", "sub", "sub_assign"].indexOf(op) !== -1)
         Reduction.push("reduction(- : " + candidateVar.name + ")");
     else if (["pre_inc", "post_inc", "add", "add_assign"].indexOf(op) !== -1)

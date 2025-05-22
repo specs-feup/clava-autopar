@@ -52,7 +52,7 @@ export default function ExecPetitDependencyTest($ForStmt: Loop) {
         "/Petitdeploop#" +
         $ForStmt.line +
         "[" +
-        ($ForStmt.getAstAncestor("FunctionDecl") as FunctionJp).name +
+        ($ForStmt.getAncestor("FunctionDecl") as FunctionJp).name +
         "]" +
         ".t";
 
@@ -61,7 +61,7 @@ export default function ExecPetitDependencyTest($ForStmt: Loop) {
         "/Petitdeploop#" +
         $ForStmt.line +
         "[" +
-        ($ForStmt.getAstAncestor("FunctionDecl") as FunctionJp).name +
+        ($ForStmt.getAncestor("FunctionDecl") as FunctionJp).name +
         "]" +
         "_output.t";
 
@@ -124,12 +124,19 @@ export default function ExecPetitDependencyTest($ForStmt: Loop) {
                     .join(" ")
                     .split(" ");
 
+                const petit_arrays:
+                    | Record<string, { name: string; size: string }>
+                    | undefined = LoopOmpAttributes[loopindex].petit_arrays;
+                if (petit_arrays === undefined) {
+                    throw new Error(
+                        "LoopOmpAttributes[loopindex].petit_arrays undefined"
+                    );
+                }
                 const varName = Object.keys(
-                    LoopOmpAttributes[loopindex].petit_arrays
+                    LoopOmpAttributes[loopindex].petit_arrays as any
                 ).filter(function (key) {
                     return (
-                        LoopOmpAttributes[loopindex].petit_arrays[key].name ===
-                        outputLine[2].split("(")[0]
+                        petit_arrays[key].name === outputLine[2].split("(")[0]
                     );
                 })[0];
 
@@ -222,7 +229,9 @@ export default function ExecPetitDependencyTest($ForStmt: Loop) {
                 ) {
                     depObj.canbeignored = true;
                 }
-
+                if (depObj.parentlooprank_dst === undefined) {
+                    throw new Error("depObj.parentlooprank_dst is undefined");
+                }
                 if (
                     (depObj.depVector[0] === "0" &&
                         depObj.src_usge === depObj.dst_usge) ||

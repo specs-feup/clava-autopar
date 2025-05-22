@@ -109,7 +109,7 @@ export default function checkForOpenMPCanonicalForm($ForStmt: Loop) {
             throw "Not a for stmt: " + $loop.astName;
         }
 
-        let innerloopindex = ($loop.getAstAncestor('FunctionDecl')as FunctionJp).name + '_' + $loop.rank.join('_');
+        const innerloopindex = ($loop.getAstAncestor('FunctionDecl')as FunctionJp).name + '_' + $loop.rank.join('_');
         if (LoopOmpAttributes[innerloopindex] === undefined)
             checkForOpenMPCanonicalForm($loop);
 
@@ -121,7 +121,7 @@ export default function checkForOpenMPCanonicalForm($ForStmt: Loop) {
                     return;
                 }
 
-            let varName = LoopOmpAttributes[innerloopindex].loopControlVarname;
+            const varName = LoopOmpAttributes[innerloopindex].loopControlVarname;
 
             if (LoopOmpAttributes[loopindex].innerloopsControlVarname === undefined){
                 LoopOmpAttributes[loopindex].innerloopsControlVarname = [];
@@ -143,8 +143,8 @@ export default function checkForOpenMPCanonicalForm($ForStmt: Loop) {
 
 
     let initVars: (InitVardecl | InitVarref)[] = [];
-    let initVardecl :InitVardecl[] = []; 	 	
-     let initmsgError = [];
+    const initVardecl :InitVardecl[] = []; 	 	
+     const initmsgError = [];
      for (const $vardecl of Query.searchFrom($ForStmt.init, Vardecl))
     {
         initVardecl.push({
@@ -157,7 +157,7 @@ export default function checkForOpenMPCanonicalForm($ForStmt: Loop) {
                 });
     }
 
-    let initVarref: InitVarref[] = [];
+    const initVarref: InitVarref[] = [];
     for (const $varref of Query.searchFrom($ForStmt.init, Varref))
     {
         const $init = $ForStmt.init;
@@ -183,7 +183,7 @@ export default function checkForOpenMPCanonicalForm($ForStmt: Loop) {
      initVars = initVars.concat(initVardecl);
      initVars = initVars.concat(initVarref);
 
-     let condVars = [];
+     const condVars = [];
     for (const $varref of Query.searchFrom($ForStmt.cond, Varref))
     {
         if ($varref.useExpr.use == 'read')
@@ -196,7 +196,7 @@ export default function checkForOpenMPCanonicalForm($ForStmt: Loop) {
                 });
     }
 
-     let stepVars = [];
+     const stepVars = [];
     for (const $varref of Query.searchFrom($ForStmt.step, Varref))
     {
         if ($varref.useExpr.use == 'write' || $varref.useExpr.use == 'readwrite')
@@ -255,8 +255,8 @@ export default function checkForOpenMPCanonicalForm($ForStmt: Loop) {
     //------------------------------------------------------------
     // checking loop test-expr  (let op lb || lb op var) let in [>,>=,<,<=]
     //------------------------------------------------------------
-     let condmsgError = []; 	
-     let condbinaryOp = [];
+     const condmsgError = []; 	
+     const condbinaryOp = [];
      let condIterationValue = NaN;
     for (const $binaryOp of Query.searchFrom($ForStmt.cond, BinaryOp))
     {
@@ -281,7 +281,7 @@ export default function checkForOpenMPCanonicalForm($ForStmt: Loop) {
      //------------------------------------------------------------
      // checking loop incr-expr
      //------------------------------------------------------------
-     let stepmsgError = []; 	
+     const stepmsgError = []; 	
      let stepOp = null;
     let $stepOpExpr = undefined;
     let $stepExpr = undefined;
@@ -348,7 +348,7 @@ export default function checkForOpenMPCanonicalForm($ForStmt: Loop) {
     //------------------------------------------------------------
     //------------------		extract start and end line for loop
     //------------------------------------------------------------
-    let strtmp = Strings.replacer($ForStmt.location,'->',':').split(':');
+    const strtmp = Strings.replacer($ForStmt.location,'->',':').split(':');
     LoopOmpAttributes[loopindex].start = Number(strtmp[strtmp.length-4]);
     LoopOmpAttributes[loopindex].end = Number(strtmp[strtmp.length-2]);
     //------------------------------------------------------------

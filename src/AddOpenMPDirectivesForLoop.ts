@@ -1,9 +1,6 @@
 import {
-    BinaryOp,
     FunctionJp,
     Loop,
-    Vardecl,
-    Varref,
 } from "@specs-feup/clava/api/Joinpoints.js";
 import { LoopOmpAttributes } from "./checkForOpenMPCanonicalForm.js";
 import GetLoopIndex from "./GetLoopIndex.js";

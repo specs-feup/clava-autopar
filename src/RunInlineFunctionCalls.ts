@@ -6,7 +6,6 @@ import {
     Vardecl,
     ExprStmt,
     BinaryOp,
-    Program,
     ReturnStmt,
     Varref,
     Param,

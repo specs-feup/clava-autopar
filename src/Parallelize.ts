@@ -1,7 +1,7 @@
 //import InlineFunctionCalls from "./InlineFunctionCalls.js";
 import RemoveNakedloops from "./RemoveNakedloops.js";
 import NormalizedBinaryOp from "./NormalizedBinaryOp.js";
-import ParallelizeLoop from "./ParallelizeLoop.js";
+//import ParallelizeLoop from "./ParallelizeLoop.js";
 import AddPragmaLoopIndex from "./AddPragmaLoopIndex.js";
 import {RunInlineFunctionCalls} from "./RunInlineFunctionCalls.js";
 import LoopInductionVariables from "./LoopInductionVariables.js";
@@ -29,11 +29,11 @@ interface OmpPragma {
 export const OmpPragmas: Record<string, OmpPragma> = {};
 
 export default class Parallelize {
-    static forLoops($loops: Loop[]) {
-        //const autoparResult = Parallelize.getForLoopsPragmas($loops, true);
+    // static forLoops($loops: Loop[]) {
+    //     //const autoparResult = Parallelize.getForLoopsPragmas($loops, true);
 
-        console.log("Parallelization finished");
-    }
+    //     console.log("Parallelization finished");
+    // }
 
     static forLoopsAsText(
         $loops: Loop[],

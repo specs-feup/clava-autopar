@@ -83,7 +83,7 @@ function retReductionOpVar($expr: Expression, candidateVar: VarAccess) {
 
     const exprvarrefset = orderedVarrefs3($expr);
     let candidateVarOp = [];
-    let otherVarUsednumber = 0; // number of other varref in expr
+    // const otherVarUsednumber = 0; // number of other varref in expr
     for (const element of exprvarrefset) {
         if (element.name === candidateVar.name) {
             if (

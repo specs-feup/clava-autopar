@@ -3,7 +3,7 @@ import RemoveNakedloops from "./RemoveNakedloops.js";
 import NormalizedBinaryOp from "./NormalizedBinaryOp.js";
 import ParallelizeLoop from "./ParallelizeLoop.js";
 import AddPragmaLoopIndex from "./AddPragmaLoopIndex.js";
-import RunInlineFunctionCalls from "./RunInlineFunctionCalls.js";
+import {RunInlineFunctionCalls} from "./RunInlineFunctionCalls.js";
 import LoopInductionVariables from "./LoopInductionVariables.js";
 import {CheckForSafeFunctionCall} from "./CheckForSafeFunctionCall.js";
 import AutoParStats from "./AutoParStats.js";

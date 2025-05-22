@@ -17,8 +17,8 @@ export interface LoopOmpAttribute {
     msgError: string[];
     astId?: string;
     loopindex?: string;
-    innerloopsControlVarname?: string[];
-    loopControlVarname?: string;
+    innerloopsControlVarname: string[];
+    loopControlVarname: string;
     loopControlVarastId?: string;
     start?: number;
     end?: number;
@@ -26,9 +26,9 @@ export interface LoopOmpAttribute {
     setp?: string | null;
     initValue?: string;
     endValue?: string;
-    privateVars?: any[];
+    privateVars: string[];
     firstprivateVars: string[];
-    lastprivateVars?: string[];
+    lastprivateVars: string[];
     Reduction?: any[];
     threadprivate?: any[];
     Reduction_listVars?: any[];
@@ -95,6 +95,10 @@ export default function checkForOpenMPCanonicalForm($ForStmt: Loop) {
         petitInputFileAddress: "",
         ForStmtToPetit: [],
         firstprivateVars: [],
+        lastprivateVars: [],
+        loopControlVarname: "",
+        privateVars: [],
+        innerloopsControlVarname: []
     };
 
 

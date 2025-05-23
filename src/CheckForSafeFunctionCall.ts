@@ -1,20 +1,16 @@
-import Clava from "@specs-feup/clava/api/clava/Clava.js";
-import CodeInserter from "@specs-feup/clava/api/clava/util/CodeInserter.js";
-import Io from "@specs-feup/lara/api/lara/Io.js";
+// import Clava from "@specs-feup/clava/api/clava/Clava.js";
+// import CodeInserter from "@specs-feup/clava/api/clava/util/CodeInserter.js";
+// import Io from "@specs-feup/lara/api/lara/Io.js";
 import Query from "@specs-feup/lara/api/weaver/Query.js";
 import { safefunctionCallslist } from "./SafeFunctionCalls.js";
 import {
-    Loop,
     Joinpoint,
-    If,
     ArrayAccess,
-    Continue,
     MemberAccess,
     Varref,
     Call,
     FileJp,
     FunctionJp,
-    Body,
 } from "@specs-feup/clava/api/Joinpoints.js";
 
 /**************************************************************
@@ -53,7 +49,7 @@ export function CheckForSafeFunctionCall() {
                     continue;
                 }
 
-                let currentRegion : Joinpoint = (
+                const currentRegion : Joinpoint = (
                     $arrayAccess.arrayVar.getDescendantsAndSelf(
                         "varref"
                     )[0] as Varref
@@ -86,7 +82,7 @@ export function CheckForSafeFunctionCall() {
                     continue;
                 }
 
-                let currentRegion : Joinpoint = (
+                const currentRegion : Joinpoint = (
                     $memberAccess.getDescendantsAndSelf("varref")[0] as Varref
                 ).vardecl.currentRegion;
                 if (
@@ -109,7 +105,7 @@ export function CheckForSafeFunctionCall() {
                     continue;
                 }
 
-                let currentRegion : Joinpoint = $varref.vardecl.currentRegion;
+                const currentRegion : Joinpoint = $varref.vardecl.currentRegion;
                 if (
                     currentRegion != undefined &&
                     currentRegion.joinPointType == "file"

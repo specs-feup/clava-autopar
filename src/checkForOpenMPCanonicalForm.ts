@@ -17,8 +17,8 @@ export interface LoopOmpAttribute {
     msgError: string[];
     astId?: string;
     loopindex?: string;
-    innerloopsControlVarname?: string[];
-    loopControlVarname?: string;
+    innerloopsControlVarname: string[];
+    loopControlVarname: string;
     loopControlVarastId?: string;
     start?: number;
     end?: number;
@@ -26,12 +26,11 @@ export interface LoopOmpAttribute {
     setp?: string | null;
     initValue?: string;
     endValue?: string;
-    privateVars?: any[];
+    privateVars: string[];
     firstprivateVars: string[];
-    lastprivateVars?: string[];
-    Reduction?: any[];
-    threadprivate?: any[];
-    Reduction_listVars?: any[];
+    lastprivateVars: string[];
+    Reduction?: string[];
+    Reduction_listVars?: string[];
     DepPetitFileName?: string | null;
     DepArrays?: string[];
     varAccess: VarAccess[];
@@ -95,6 +94,10 @@ export default function checkForOpenMPCanonicalForm($ForStmt: Loop) {
         petitInputFileAddress: "",
         ForStmtToPetit: [],
         firstprivateVars: [],
+        lastprivateVars: [],
+        loopControlVarname: "",
+        privateVars: [],
+        innerloopsControlVarname: []
     };
 
 
@@ -105,7 +108,7 @@ export default function checkForOpenMPCanonicalForm($ForStmt: Loop) {
             throw "Not a for stmt: " + $loop.astName;
         }
 
-        var innerloopindex = ($loop.getAstAncestor('FunctionDecl')as FunctionJp).name + '_' + $loop.rank.join('_');
+        const innerloopindex = ($loop.getAstAncestor('FunctionDecl')as FunctionJp).name + '_' + $loop.rank.join('_');
         if (LoopOmpAttributes[innerloopindex] === undefined)
             checkForOpenMPCanonicalForm($loop);
 
@@ -117,7 +120,7 @@ export default function checkForOpenMPCanonicalForm($ForStmt: Loop) {
                     return;
                 }
 
-            var varName = LoopOmpAttributes[innerloopindex].loopControlVarname;
+            const varName = LoopOmpAttributes[innerloopindex].loopControlVarname;
 
             if (LoopOmpAttributes[loopindex].innerloopsControlVarname === undefined){
                 LoopOmpAttributes[loopindex].innerloopsControlVarname = [];
@@ -132,15 +135,15 @@ export default function checkForOpenMPCanonicalForm($ForStmt: Loop) {
     
 
 
-    var controlVarsName = [];
-    var controlVarsAstId = [];
-    var msgError:string[] = [];
+    let controlVarsName = [];
+    let controlVarsAstId = [];
+    let msgError:string[] = [];
 
 
 
-    var initVars: (InitVardecl | InitVarref)[] = [];
-    var initVardecl :InitVardecl[] = []; 	 	
-     var initmsgError = [];
+    let initVars: (InitVardecl | InitVarref)[] = [];
+    const initVardecl :InitVardecl[] = []; 	 	
+     const initmsgError = [];
      for (const $vardecl of Query.searchFrom($ForStmt.init, Vardecl))
     {
         initVardecl.push({
@@ -153,7 +156,7 @@ export default function checkForOpenMPCanonicalForm($ForStmt: Loop) {
                 });
     }
 
-    var initVarref: InitVarref[] = [];
+    const initVarref: InitVarref[] = [];
     for (const $varref of Query.searchFrom($ForStmt.init, Varref))
     {
         const $init = $ForStmt.init;
@@ -179,7 +182,7 @@ export default function checkForOpenMPCanonicalForm($ForStmt: Loop) {
      initVars = initVars.concat(initVardecl);
      initVars = initVars.concat(initVarref);
 
-     var condVars = [];
+     const condVars = [];
     for (const $varref of Query.searchFrom($ForStmt.cond, Varref))
     {
         if ($varref.useExpr.use == 'read')
@@ -192,7 +195,7 @@ export default function checkForOpenMPCanonicalForm($ForStmt: Loop) {
                 });
     }
 
-     var stepVars = [];
+     const stepVars = [];
     for (const $varref of Query.searchFrom($ForStmt.step, Varref))
     {
         if ($varref.useExpr.use == 'write' || $varref.useExpr.use == 'readwrite')
@@ -220,20 +223,20 @@ export default function checkForOpenMPCanonicalForm($ForStmt: Loop) {
 
     
     //------------------------------------------------------------
-    // checking loop init-expr  (integer-type var = lb)
+    // checking loop init-expr  (integer-type let = lb)
     //------------------------------------------------------------
     if (initVardecl.length > 1)
-        initmsgError.push(' only single var declaration is allowed' );
+        initmsgError.push(' only single let declaration is allowed' );
     else if (initVardecl.length == 1 && initVardecl[0].varType != 'int')
         initmsgError.push('typeOf(' + initVardecl[0].name + ') must have int type, not ' +  initVardecl[0].varType);
     else if (initVardecl.length == 1 && initVardecl[0].hasInit == false)
         initmsgError.push(' loop init-expr declaration without variable initialization' );
 
     //------------------------------------------------------------
-    // checking loop init-expr  (var = lb)
+    // checking loop init-expr  (let = lb)
     //------------------------------------------------------------
     if (initVarref.length > 1)
-        initmsgError.push(' only single var initialization is allowed' );
+        initmsgError.push(' only single let initialization is allowed' );
     else if (initVarref.length == 1 && initVarref[0].varType != 'int')
     {
         /*
@@ -249,11 +252,11 @@ export default function checkForOpenMPCanonicalForm($ForStmt: Loop) {
     
 
     //------------------------------------------------------------
-    // checking loop test-expr  (var op lb || lb op var) var in [>,>=,<,<=]
+    // checking loop test-expr  (let op lb || lb op var) let in [>,>=,<,<=]
     //------------------------------------------------------------
-     var condmsgError = []; 	
-     var condbinaryOp = [];
-     var condIterationValue = NaN;
+     const condmsgError = []; 	
+     const condbinaryOp = [];
+     let condIterationValue = NaN;
     for (const $binaryOp of Query.searchFrom($ForStmt.cond, BinaryOp))
     {
          condbinaryOp.push($binaryOp.kind);
@@ -266,7 +269,7 @@ export default function checkForOpenMPCanonicalForm($ForStmt: Loop) {
     
      if (['lt','le','gt','ge'].indexOf(condbinaryOp[0]) == -1)
      {
-         condmsgError.push(' relation-op should be in the following : (var op lb) OR (lb op var) where op in [<,<=,>,>=]' );
+         condmsgError.push(' relation-op should be in the following : (let op lb) OR (lb op var) where op in [<,<=,>,>=]' );
      }
      else if (condIterationValue < 100)
      {
@@ -277,10 +280,10 @@ export default function checkForOpenMPCanonicalForm($ForStmt: Loop) {
      //------------------------------------------------------------
      // checking loop incr-expr
      //------------------------------------------------------------
-     var stepmsgError = []; 	
-     var stepOp = null;
-    var $stepOpExpr = undefined;
-    var $stepExpr = undefined;
+     const stepmsgError = []; 	
+     let stepOp = null;
+    let $stepOpExpr = undefined;
+    let $stepExpr = undefined;
      for (const $expr of Query.searchFrom($ForStmt.step, Expression, ($expr) => {return $expr.joinPointType == 'binaryOp' || $expr.joinPointType == 'unaryOp'}))
      {
         const $step = $ForStmt.step;
@@ -318,7 +321,7 @@ export default function checkForOpenMPCanonicalForm($ForStmt: Loop) {
         if (o.ControlVarChanged == true)
         {
             LoopOmpAttributes[loopindex].hasOpenMPCanonicalForm = false;
-            msgError.push('For controlVar is changed inside of loop body');
+            msgError.push('For controllet is changed inside of loop body');
         }
 
     }
@@ -344,7 +347,7 @@ export default function checkForOpenMPCanonicalForm($ForStmt: Loop) {
     //------------------------------------------------------------
     //------------------		extract start and end line for loop
     //------------------------------------------------------------
-    var strtmp = Strings.replacer($ForStmt.location,'->',':').split(':');
+    const strtmp = Strings.replacer($ForStmt.location,'->',':').split(':');
     LoopOmpAttributes[loopindex].start = Number(strtmp[strtmp.length-4]);
     LoopOmpAttributes[loopindex].end = Number(strtmp[strtmp.length-2]);
     //------------------------------------------------------------
@@ -370,7 +373,6 @@ export default function checkForOpenMPCanonicalForm($ForStmt: Loop) {
     LoopOmpAttributes[loopindex].firstprivateVars = [];
     LoopOmpAttributes[loopindex].lastprivateVars = [];
     LoopOmpAttributes[loopindex].Reduction = [];
-    LoopOmpAttributes[loopindex].threadprivate = [];
     LoopOmpAttributes[loopindex].Reduction_listVars = [];
     LoopOmpAttributes[loopindex].DepPetitFileName = null;
 

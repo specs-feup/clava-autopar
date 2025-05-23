@@ -1,5 +1,5 @@
 import Query from "@specs-feup/lara/api/weaver/Query.js";
-import { BinaryOp, Expression, Loop, UnaryOp, Varref } from "@specs-feup/clava/api/Joinpoints.js";
+import { BinaryOp, Expression, Loop, UnaryOp} from "@specs-feup/clava/api/Joinpoints.js";
 import GetLoopIndex from "./GetLoopIndex.js";
 import { orderedVarrefs3 } from "./orderedVarrefs3.js";
 import SearchStruct from "./SearchStruct.js";
@@ -34,7 +34,7 @@ export default function FindReductionArrays($ForStmt: Loop, candidateArrayName: 
 
     
     const loopindex = GetLoopIndex($ForStmt);
-    const loopControlVarname = LoopOmpAttributes[loopindex].loopControlVarname;
+    //const loopControlVarname = LoopOmpAttributes[loopindex].loopControlVarname;
 
 
     const candidateArray = SearchStruct(LoopOmpAttributes[loopindex].varAccess, {usedInClause : false, name : candidateArrayName})[0];
@@ -56,7 +56,7 @@ export default function FindReductionArrays($ForStmt: Loop, candidateArrayName: 
 
 
     for (const $expr of Query.searchFrom($ForStmt.body, Expression, {line: exprline})) {
-        reduction = retReductionOpArray($expr, candidateArray, isdependentInnerloop, isdependentCurrentloop, isdependentOuterloop);
+        reduction = retReductionOpArray($expr, candidateArray, isdependentInnerloop);
         break;
     
     }
@@ -78,14 +78,14 @@ export default function FindReductionArrays($ForStmt: Loop, candidateArrayName: 
 *                       retReductionOpArray
 * 
 **************************************************************/
-function retReductionOpArray($expr: Expression, candidateVar : VarAccess, isdependentInnerloop: boolean, isdependentCurrentloop: boolean, isdependentOuterloop: boolean) {
+function retReductionOpArray($expr: Expression, candidateVar : VarAccess, isdependentInnerloop: boolean) {
     
     const reduction: string[] = [];
     let candidateVarUse = null;
 
     const exprvarrefset = orderedVarrefs3($expr);
     let candidateVarOp = [];
-    const otherVarUsednumber = 0; // number of other varref in expr
+    //const otherVarUsednumber = 0; // number of other varref in expr
     for(let j = 0; j < exprvarrefset.length; j++)
     {	
 

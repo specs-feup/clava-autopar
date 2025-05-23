@@ -6,7 +6,6 @@ import {
     Vardecl,
     ExprStmt,
     BinaryOp,
-    Program,
     ReturnStmt,
     Varref,
     Param,
@@ -39,7 +38,7 @@ interface FunctionData {
 const func_name: Record<string, FunctionData> = {};
 let countCallInlinedFunction: number = 0;
 
-function applyFunctionCall(): void {
+export function RunInlineFunctionCalls(): void {
     for (const $function of Query.search(FileJp).search(FunctionJp)) {
         func_name[$function.name] ??= {
             innerCallNumber: 0,
@@ -83,7 +82,7 @@ function applyFunctionCall(): void {
         if (!flag) break;
     }
 
-    let excluded_function_list: string[] = [];
+    const excluded_function_list: string[] = [];
     // check for recursive function calls
     for (const callerFunc of Object.keys(func_name)) {
         if (
@@ -231,11 +230,11 @@ function callInline(func_name: string): void {
             // Count as an inlined call
             AutoParStats.get().incInlineCalls();
 
-            let o = inlinePreparation(func_name, $call, exprStmt);
+            const o = inlinePreparation(func_name, $call, exprStmt);
 
             if (o !== undefined) {
                 if (o.$newStmts.length > 0) {
-                    let replacedCallStr = `// ClavaInlineFunction : ${exprStmt.code}  countCallInlinedFunction : ${countCallInlinedFunction}`;
+                    const replacedCallStr = `// ClavaInlineFunction : ${exprStmt.code}  countCallInlinedFunction : ${countCallInlinedFunction}`;
 
                     // Insert after to preserve order of comments
                     let currentStmt = exprStmt.insertAfter(replacedCallStr);
@@ -253,9 +252,9 @@ function callInline(func_name: string): void {
         }
     }
 }
-function aspec_rebuild(): void {
-    (Query.root() as Program).rebuild();
-}
+// function aspec_rebuild(): void {
+//     (Query.root() as Program).rebuild();
+// }
 
 /**************************************************************
  *
@@ -273,7 +272,7 @@ function inlinePreparation(
     exprStmt: ExprStmt
 ): ReplacedStruct | undefined {
     let replacedCallStr: string = "";
-    let $newStmts: Statement[] = [];
+    const $newStmts: Statement[] = [];
 
     let funcJP = null;
 
@@ -292,7 +291,7 @@ function inlinePreparation(
         return;
     }
 
-    let returnStmtJPs: ReturnStmt[] = [];
+    const returnStmtJPs: ReturnStmt[] = [];
 
     for (const $function of Query.search(FunctionJp)) {
         for (const $stmt of Query.searchFrom($function.body, ReturnStmt)) {
@@ -323,7 +322,7 @@ function inlinePreparation(
         for (const $vardecl of Query.searchFrom($function.body, Vardecl)) {
             if ($vardecl.qualifiedName !== $vardecl.name) continue;
 
-            let newDeclName: string =
+            const newDeclName: string =
                 $vardecl.qualifiedName + "_" + countCallInlinedFunction;
             param_table[$vardecl.name] = newDeclName;
             $vardecl.name = newDeclName;
@@ -332,8 +331,8 @@ function inlinePreparation(
 
     for (const $function of Query.search(FunctionJp)) {
         for (const $varref of Query.searchFrom($function.body, Varref)) {
-            let varrefName: string = $varref.name;
-            let newVarrefName: string = updateVarrefName(
+            const varrefName: string = $varref.name;
+            const newVarrefName: string = updateVarrefName(
                 varrefName,
                 param_table
             );
@@ -368,7 +367,7 @@ function inlinePreparation(
                 $param.qualifiedName + "_" + countCallInlinedFunction;
             $param.name = param_table[$param.name];
 
-            let $newVardecl = ClavaJoinPoints.varDecl(
+            const $newVardecl = ClavaJoinPoints.varDecl(
                 $param.name,
                 callStmt.argList[param_index].copy()
             );
@@ -416,8 +415,8 @@ function inlinePreparation(
 
     for (const $function of Query.search(FunctionJp)) {
         for (const $vardecl of Query.searchFrom($function.body, Vardecl)) {
-            let varrefs: Varref[] = [];
-            let $typeCopy: Type = ClavaType.getVarrefsInTypeCopy(
+            const varrefs: Varref[] = [];
+            const $typeCopy: Type = ClavaType.getVarrefsInTypeCopy(
                 $vardecl.type,
                 varrefs
             );
@@ -431,7 +430,7 @@ function inlinePreparation(
     }
 
     if (exprStmt.children[0].joinPointType === "binaryOp") {
-        let retJPs: Statement[] = funcJP.body.allStmts.filter(function (obj) {
+        const retJPs: Statement[] = funcJP.body.allStmts.filter(function (obj) {
             if (obj.astName === "ReturnStmt") {
                 return obj;
             }
@@ -439,8 +438,8 @@ function inlinePreparation(
 
         for (const retJP of retJPs) {
             // Copy binary operation stmt
-            let exprStmtCopy = exprStmt.copy() as ExprStmt;
-            let binaryOpCopy = exprStmtCopy.children[0] as BinaryOp;
+            const exprStmtCopy = exprStmt.copy() as ExprStmt;
+            const binaryOpCopy = exprStmtCopy.children[0] as BinaryOp;
             // Replace right hand with return expression
             binaryOpCopy.right = retJP.children[0] as Expression;
 
@@ -479,12 +478,12 @@ function updateVarrefName(
     // If name has a square bracket, it means it is array access
     // Update the name of the array, and the contents of each subscript
 
-    let bracketIndex: number = varrefName.indexOf("[");
+    const bracketIndex: number = varrefName.indexOf("[");
     if (bracketIndex != -1) {
-        let accessName: string = varrefName.substring(0, bracketIndex);
-        let newAccessName: string = updateVarrefName(accessName, param_table);
-        let suffix: string = varrefName.substring(bracketIndex);
-        let updatedSuffix: string = updateSubscripts(suffix, param_table);
+        const accessName: string = varrefName.substring(0, bracketIndex);
+        const newAccessName: string = updateVarrefName(accessName, param_table);
+        const suffix: string = varrefName.substring(bracketIndex);
+        const updatedSuffix: string = updateSubscripts(suffix, param_table);
 
         return newAccessName + updatedSuffix;
     }
@@ -507,11 +506,11 @@ function updateSubscripts(
         // matched text: match[0]
         // match start: match.index
         // capturing group n: match[n]
-        let matched = match[0];
-        let matchedIndex = match.index;
+        const matched = match[0];
+        const matchedIndex = match.index;
         match = idRegex["exec"](subscripts);
 
-        let newMatched = updateVarrefName(matched, param_table);
+        const newMatched = updateVarrefName(matched, param_table);
 
         updatedSubscripts += subscripts.substring(startIndex, matchedIndex);
         updatedSubscripts += newMatched;

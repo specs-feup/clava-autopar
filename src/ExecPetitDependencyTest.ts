@@ -124,16 +124,14 @@ export default function ExecPetitDependencyTest($ForStmt: Loop) {
                     .join(" ")
                     .split(" ");
 
-                const petit_arrays:
-                    | Record<string, { name: string; size: string }>
-                    | undefined = LoopOmpAttributes[loopindex].petit_arrays;
+                const petit_arrays = LoopOmpAttributes[loopindex].petit_arrays;
                 if (petit_arrays === undefined) {
                     throw new Error(
                         "LoopOmpAttributes[loopindex].petit_arrays undefined"
                     );
                 }
                 const varName = Object.keys(
-                    LoopOmpAttributes[loopindex].petit_arrays as any
+                    petit_arrays
                 ).filter(function (key) {
                     return (
                         petit_arrays[key].name === outputLine[2].split("(")[0]

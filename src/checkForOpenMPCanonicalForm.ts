@@ -29,9 +29,8 @@ export interface LoopOmpAttribute {
     privateVars: string[];
     firstprivateVars: string[];
     lastprivateVars: string[];
-    Reduction?: any[];
-    threadprivate?: any[];
-    Reduction_listVars?: any[];
+    Reduction?: string[];
+    Reduction_listVars?: string[];
     DepPetitFileName?: string | null;
     DepArrays?: string[];
     varAccess: VarAccess[];
@@ -374,7 +373,6 @@ export default function checkForOpenMPCanonicalForm($ForStmt: Loop) {
     LoopOmpAttributes[loopindex].firstprivateVars = [];
     LoopOmpAttributes[loopindex].lastprivateVars = [];
     LoopOmpAttributes[loopindex].Reduction = [];
-    LoopOmpAttributes[loopindex].threadprivate = [];
     LoopOmpAttributes[loopindex].Reduction_listVars = [];
     LoopOmpAttributes[loopindex].DepPetitFileName = null;
 

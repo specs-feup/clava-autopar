@@ -3,7 +3,7 @@
  *                       allReplace
  *
  **************************************************************/
-export function allReplace(str: string, obj: Record<string, any>) {
+export function allReplace(str: string, obj: Record<string, string>) {
     let retStr = str;
     for (const x in obj) {
         retStr = retStr.replace(new RegExp(x, "g"), obj[x]);

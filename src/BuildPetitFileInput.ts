@@ -3,8 +3,6 @@
  *                       BuildPetitFileInput
  *
  **************************************************************/
-//import get_varTypeAccess from "./get_varTypeAccess.js";
-//a
 import {
     Loop,
     Expression,
@@ -298,12 +296,10 @@ export function CovertLoopToPetitForm($ForStmt: Loop, tabOP: string[]) {
 
     for (const loop of Query.search(Loop, { kind: "for" })) {
         for (const $cast of loop.init.getDescendantsAndSelf("vardecl")) {
-            // if for(int i = ... )
             cloneJP = ($cast as Vardecl).init.copy();
             break;
         }
         for (const $cast of loop.init.getDescendantsAndSelf("binaryOp")) {
-            // if for(i = ... )
             cloneJP = ($cast as BinaryOp).right.copy();
             break;
         }

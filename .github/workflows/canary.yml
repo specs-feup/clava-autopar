@@ -68,6 +68,7 @@ jobs:
 
             - name: Setup js workspace
               run: |
+                  node --version
                   cd clava-autopar
                   npm install
 

@@ -88,5 +88,5 @@ jobs:
               # TODO: Remove 'if' when build is stable
               if: ${{ success() || ( failure() && (steps.lint.outcome == 'failure' || steps.build.outcome == 'failure')) }}
               run: |
-                  cmake -DLOCAL_CLAVA:STRING="npx clava classic" specs-lara/ANTAREX/AutoPar
+                  cmake -DCLAVA_NODE=TRUE specs-lara/ANTAREX/AutoPar
                   make

@@ -16,7 +16,8 @@ permissions:
 env:
     JAVA_VERSION: 17
     NODE_VERSION: 20.x
-    CLAVA_BRANCH: PluginAndTool
+    #CLAVA_BRANCH: PluginAndTool
+    CLAVA_BRANCH: staging    
 
 jobs:
     test:

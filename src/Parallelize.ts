@@ -3,9 +3,9 @@ import RemoveNakedloops from "./RemoveNakedloops.js";
 import NormalizedBinaryOp from "./NormalizedBinaryOp.js";
 //import ParallelizeLoop from "./ParallelizeLoop.js";
 import AddPragmaLoopIndex from "./AddPragmaLoopIndex.js";
-import {RunInlineFunctionCalls} from "./RunInlineFunctionCalls.js";
+import { RunInlineFunctionCalls } from "./RunInlineFunctionCalls.js";
 import LoopInductionVariables from "./LoopInductionVariables.js";
-import {CheckForSafeFunctionCall} from "./CheckForSafeFunctionCall.js";
+import { CheckForSafeFunctionCall } from "./CheckForSafeFunctionCall.js";
 import AutoParStats from "./AutoParStats.js";
 
 import Clava from "@specs-feup/clava/api/clava/Clava.js";
@@ -20,7 +20,6 @@ import { JavaClasses } from "@specs-feup/lara/api/lara/util/JavaTypes.js";
 /**
  * Utility methods for parallelization.
  *
- * @class
  */
 interface OmpPragma {
     pragmaCode: string;
@@ -29,11 +28,10 @@ interface OmpPragma {
 export const OmpPragmas: Record<string, OmpPragma> = {};
 
 export default class Parallelize {
-    // static forLoops($loops: Loop[]) {
-    //     //const autoparResult = Parallelize.getForLoopsPragmas($loops, true);
-
-    //     console.log("Parallelization finished");
-    // }
+    static forLoops($loops: Loop[]) {
+        Parallelize.getForLoopsPragmas($loops, true);
+        console.log("Parallelization finished");
+    }
 
     static forLoopsAsText(
         $loops: Loop[],
@@ -83,11 +81,11 @@ export default class Parallelize {
 
     /**
      *
-     * @param {$loop[]} [$loops=<All program loops>] - Array of loops to parallelize.
-     * @param {boolean} insertPragma - If true, inserts the found pragmas in the code.
-     * @param {boolean} useLoopId - If true, the returning map uses $loop.id instead of $loop.astId as keys.
+     * @param $loops - Array of loops to parallelize.
+     * @param insertPragma - If true, inserts the found pragmas in the code.
+     * @param useLoopId - If true, the returning map uses $loop.id instead of $loop.astId as keys.
      *
-     * @return {Object[parallelLoops, unparallelizableLoops]} an object with the pragmas of the parallelized loops, and the error messages of the loops that could not be parallelized.
+     * @returns An object with the pragmas of the parallelized loops, and the error messages of the loops that could not be parallelized.
      */
     static getForLoopsPragmas(
         $loops: Loop[] = Clava.getProgram().getDescendants("loop") as Loop[],
@@ -146,7 +144,9 @@ export default class Parallelize {
         const parallelLoops: Record<string, string> = {};
         const unparallelizableLoops: Record<string, string> = {};
 
-        const $pragmas = Clava.getProgram().getDescendants("pragma") as Pragma[];
+        const $pragmas = Clava.getProgram().getDescendants(
+            "pragma"
+        ) as Pragma[];
         for (const $pragma of $pragmas) {
             if ($pragma.name !== "parallelize_id") {
                 continue;
@@ -195,7 +195,7 @@ export default class Parallelize {
     /**
      * Comments OpenMP pragmas that are nested inside other OpenMP pragmas.
      *
-     * @return {String} the loop ids of loops whose OpenMP pragmas where commented.
+     * @returns The loop ids of loops whose OpenMP pragmas where commented.
      */
     static removeNestedPragmas(): string[] {
         const pragmasToComment: Omp[] = [];

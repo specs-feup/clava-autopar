@@ -90,5 +90,5 @@ jobs:
               if: ${{ success() || ( failure() && (steps.lint.outcome == 'failure' || steps.build.outcome == 'failure')) }}
               run: |
                   cd clava-autopar
-                  cmake -DClava_DIR=../ specs-lara/ANTAREX/AutoPar
+                  cmake ../specs-lara/ANTAREX/AutoPar
                   make

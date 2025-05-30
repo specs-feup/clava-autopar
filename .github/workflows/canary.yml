@@ -67,8 +67,7 @@ jobs:
 
             - name: Setup js workspace
               run: |
-                  node --version
-                  cd clava-autopar
+                  echo '{ "name": "SPeCS Workspace", "type": "module", "workspaces": [ "clava-autopar" ] }' > package.json
                   npm install
 
             - name: Lint TS Sources
@@ -89,6 +88,5 @@ jobs:
               # TODO: Remove 'if' when build is stable
               if: ${{ success() || ( failure() && (steps.lint.outcome == 'failure' || steps.build.outcome == 'failure')) }}
               run: |
-                  cd clava-autopar
-                  cmake ../specs-lara/ANTAREX/AutoPar
+                  cmake specs-lara/ANTAREX/AutoPar
                   make

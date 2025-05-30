@@ -35,7 +35,6 @@ jobs:
               uses: actions/setup-node@v4
               with:
                   node-version: ${{ env.NODE_VERSION }}
-                  registry-url: "https://registry.npmjs.org/"
 
             - name: Install dependencies
               run: |
@@ -90,5 +89,6 @@ jobs:
               # TODO: Remove 'if' when build is stable
               if: ${{ success() || ( failure() && (steps.lint.outcome == 'failure' || steps.build.outcome == 'failure')) }}
               run: |
-                  cmake specs-lara/ANTAREX/AutoPar
+                  cd clava-autopar
+                  cmake -DClava_DIR=../ specs-lara/ANTAREX/AutoPar
                   make

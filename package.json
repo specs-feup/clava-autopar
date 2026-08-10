@@ -6,6 +6,7 @@
     "type": "module",
     "files": [
         "api",
+        "java-binaries",
         "src",
         ".gitignore",
         "eslint.config.js",

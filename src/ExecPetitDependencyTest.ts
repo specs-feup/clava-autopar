@@ -3,7 +3,7 @@
  *                       ExecPetitDependencyTest
  *
  **************************************************************/
-import ClavaJavaTypes from "@specs-feup/clava/api/clava/ClavaJavaTypes.js";
+import AutoparJavaTypes from "./AutoparJavaTypes.js";
 import { FunctionJp, Loop } from "@specs-feup/clava/api/Joinpoints.js";
 import GetLoopIndex from "./GetLoopIndex.js";
 import Clava from "@specs-feup/clava/api/clava/Clava.js";
@@ -86,7 +86,7 @@ export default function ExecPetitDependencyTest($ForStmt: Loop) {
     // RUN petit dependency test
     const printToConsole = false;
     const timeoutSeconds = 60;
-    let consoleOutput = ClavaJavaTypes.ClavaPetit.execute(
+    let consoleOutput = AutoparJavaTypes.ClavaPetit.execute(
         petitArgs,
         Clava.getWeavingFolder() + "/",
         printToConsole,

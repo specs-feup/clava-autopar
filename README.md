@@ -10,6 +10,8 @@ Execute the following commands to download all the required code:
 npm install
 ```
 
+This project depents on project PetitPlus, in repository [specs-java-libs](https://github.com/specs-feup/specs-java-libs). The project needs to be compiled (e.g., `gradle jar`) and the resulting JAR must be copied to the folder `java-binaries`.
+
 ## Executing Clava
 
 You can execute your project in Clava by running the following on your terminal

@@ -64,7 +64,8 @@ export function RunInlineFunctionCalls(): void {
   while (true) {
     flag = false;
     for (const caller_func in Object.keys(func_name)) {
-      // Added this because it was giving an error below
+      // TODO: Added this because it was giving an error below
+      // Check in what situations this is happening
       if (func_name[caller_func] === undefined) {
         continue;
       }

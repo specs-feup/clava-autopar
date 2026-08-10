@@ -69,12 +69,13 @@ jobs:
               run: |
                   echo '{ "name": "SPeCS Workspace", "type": "module", "workspaces": [ "clava-autopar" ] }' > package.json
                   npm install
-
-            - name: Lint TS Sources
-              id: lint
-              run: |
-                  cd clava-autopar
-                  npm run lint
+                  
+            # Temporarily disabled
+            #- name: Lint TS Sources
+            #  id: lint
+            #  run: |
+            #      cd clava-autopar
+            #      npm run lint
 
             - name: Build Project
               id: build

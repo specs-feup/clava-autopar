@@ -31,7 +31,7 @@ export default function SetVarrefOpenMPscoping($ForStmt: Loop) {
     //------------------------------------------------------------
     //	add all sub loop control vars to private list
     //------------------------------------------------------------
-    let loopsControlVarname = [];
+    let loopsControlVarname : string[]  = [] ;
     loopsControlVarname.push(LoopOmpAttributes[loopindex].loopControlVarname);
     if (LoopOmpAttributes[loopindex].innerloopsControlVarname !== undefined) {
         loopsControlVarname = loopsControlVarname.concat(
@@ -41,9 +41,9 @@ export default function SetVarrefOpenMPscoping($ForStmt: Loop) {
 
     for (const element of loopsControlVarname) {
         if (
-            LoopOmpAttributes[loopindex].privateVars?.indexOf(
+            (LoopOmpAttributes[loopindex].privateVars?.indexOf(
                 element
-            ) === -1
+            ) === -1)
         )
             LoopOmpAttributes[loopindex].privateVars.push(
                 element
@@ -60,6 +60,9 @@ export default function SetVarrefOpenMPscoping($ForStmt: Loop) {
             varObj.nextUse !== "R" &&
             (varObj.use === "WR" || varObj.use === "W")
         ) {
+            if(varObj.name === undefined) {
+                throw new Error("varObj.name is undefined");
+            }
             if (
                 LoopOmpAttributes[loopindex].privateVars?.indexOf(
                     varObj.name
@@ -90,6 +93,9 @@ export default function SetVarrefOpenMPscoping($ForStmt: Loop) {
             element.usedInClause === false &&
             element.declpos !== "inside"
         ) {
+            if(element.name === undefined) {
+                throw new Error("element.name is undefined");   
+            }
             if (
                 element.use === "R" &&
                 LoopOmpAttributes[loopindex].firstprivateVars?.indexOf(
@@ -120,6 +126,9 @@ export default function SetVarrefOpenMPscoping($ForStmt: Loop) {
     // simple test if all variable used in Clauses are set as usedInClause
     //------------------------------------------------------------
     for (const element of varreflist) {
+        if(element.name === undefined) {
+            throw new Error("element.name is undefined");
+        }
         if (
             element.usedInClause === false &&
             (LoopOmpAttributes[loopindex].firstprivateVars?.indexOf(

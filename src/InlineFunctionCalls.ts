@@ -5,7 +5,7 @@
 **************************************************************/
 
 import Query from "@specs-feup/lara/api/weaver/Query.js";
-import { Call, FileJp, FunctionJp, Loop, Omp } from "@specs-feup/clava/api/Joinpoints.js";
+import { Call, FileJp, FunctionJp, Loop} from "@specs-feup/clava/api/Joinpoints.js";
 
 interface FunctionData{
     innerCallNumber: number;
@@ -26,7 +26,7 @@ export default function InlineFunctionCalls() {
         }
     }
 
-    let sorted : [string, number][] = [];
+    const sorted : [string, number][] = [];
     for (const key in func_name) {
         sorted.push([key, func_name[key].innerCallNumber]);
     }

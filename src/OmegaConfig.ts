@@ -6,7 +6,7 @@
 export default class OmegaConfig {
     static petitExecutable = null;
 
-    static setPetitExecutable(petitExecutable) {
+    static setPetitExecutable(petitExecutable : any) {
         OmegaConfig.petitExecutable = petitExecutable;
     }
 }

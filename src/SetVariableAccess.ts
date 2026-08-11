@@ -7,7 +7,6 @@ import {
     If,
     Loop,
     Param,
-    Statement,
     Varref,
 } from "@specs-feup/clava/api/Joinpoints.js";
 import { LoopOmpAttributes } from "./checkForOpenMPCanonicalForm.js";

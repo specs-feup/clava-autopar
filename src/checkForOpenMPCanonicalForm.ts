@@ -223,20 +223,20 @@ export default function checkForOpenMPCanonicalForm($ForStmt: Loop) {
 
     
     //------------------------------------------------------------
-    // checking loop init-expr  (integer-type let = lb)
+    // checking loop init-expr  (integer-type var = lb)
     //------------------------------------------------------------
     if (initVardecl.length > 1)
-        initmsgError.push(' only single let declaration is allowed' );
+        initmsgError.push(' only single var declaration is allowed' );
     else if (initVardecl.length == 1 && initVardecl[0].varType != 'int')
         initmsgError.push('typeOf(' + initVardecl[0].name + ') must have int type, not ' +  initVardecl[0].varType);
     else if (initVardecl.length == 1 && initVardecl[0].hasInit == false)
         initmsgError.push(' loop init-expr declaration without variable initialization' );
 
     //------------------------------------------------------------
-    // checking loop init-expr  (let = lb)
+    // checking loop init-expr  (var = lb)
     //------------------------------------------------------------
     if (initVarref.length > 1)
-        initmsgError.push(' only single let initialization is allowed' );
+        initmsgError.push(' only single var initialization is allowed' );
     else if (initVarref.length == 1 && initVarref[0].varType != 'int')
     {
         /*
@@ -252,7 +252,7 @@ export default function checkForOpenMPCanonicalForm($ForStmt: Loop) {
     
 
     //------------------------------------------------------------
-    // checking loop test-expr  (let op lb || lb op var) let in [>,>=,<,<=]
+    // checking loop test-expr  (var op lb || lb op var) var in [>,>=,<,<=]
     //------------------------------------------------------------
      const condmsgError = []; 	
      const condbinaryOp = [];
@@ -269,7 +269,7 @@ export default function checkForOpenMPCanonicalForm($ForStmt: Loop) {
     
      if (['lt','le','gt','ge'].indexOf(condbinaryOp[0]) == -1)
      {
-         condmsgError.push(' relation-op should be in the following : (let op lb) OR (lb op var) where op in [<,<=,>,>=]' );
+         condmsgError.push(' relation-op should be in the following : (var op lb) OR (lb op var) where op in [<,<=,>,>=]' );
      }
      else if (condIterationValue < 100)
      {

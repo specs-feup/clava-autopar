@@ -246,9 +246,7 @@ function callInline(func_name: string): void {
     }
   }
 }
-// function aspec_rebuild(): void {
-//     (Query.root() as Program).rebuild();
-// }
+
 
 /**************************************************************
  *

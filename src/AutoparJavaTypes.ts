@@ -16,7 +16,7 @@ export namespace AutoparJavaClasses {
 export default class AutoparJavaTypes {
   static get ClavaPetit() {
     return JavaTypes.getType(
-      "pt.up.fe.specs.clava.weaver.util.ClavaPetit",
+      "pt.up.fe.specs.petit.SpecsPetit",
     ) as AutoparJavaClasses.ClavaPetit;
   }
 }

@@ -12,6 +12,7 @@ import Strings from "@specs-feup/lara/api/lara/Strings.js";
 import { allReplace } from "./allReplace.js";
 import Add_msgError from "./Add_msgError.js";
 import { LoopOmpAttributes } from "./checkForOpenMPCanonicalForm.js";
+import JavaTypes from "@specs-feup/lara/api/lara/util/JavaTypes.js";
 
 export interface DependencyObject {
     depType: string;
@@ -52,7 +53,7 @@ export default function ExecPetitDependencyTest($ForStmt: Loop) {
         "/Petitdeploop#" +
         $ForStmt.line +
         "[" +
-        ($ForStmt.getAncestor("FunctionDecl") as FunctionJp).name +
+        ($ForStmt.getAncestor("function") as FunctionJp).name +
         "]" +
         ".t";
 
@@ -61,7 +62,7 @@ export default function ExecPetitDependencyTest($ForStmt: Loop) {
         "/Petitdeploop#" +
         $ForStmt.line +
         "[" +
-        ($ForStmt.getAncestor("FunctionDecl") as FunctionJp).name +
+        ($ForStmt.getAncestor("function") as FunctionJp).name +
         "]" +
         "_output.t";
 
@@ -86,8 +87,12 @@ export default function ExecPetitDependencyTest($ForStmt: Loop) {
     // RUN petit dependency test
     const printToConsole = false;
     const timeoutSeconds = 60;
+    const javaPetitArgs = new JavaTypes.ArrayList();
+    for (const petitArg of petitArgs) {
+        javaPetitArgs.add(petitArg);
+    }
     let consoleOutput = AutoparJavaTypes.ClavaPetit.execute(
-        petitArgs,
+        javaPetitArgs,
         Clava.getWeavingFolder() + "/",
         printToConsole,
         timeoutSeconds
@@ -96,9 +101,12 @@ export default function ExecPetitDependencyTest($ForStmt: Loop) {
     if (consoleOutput.length === 0) {
         LoopOmpAttributes[loopindex].PetitFoundDependency = [];
 
-        const PetitOutputDependencyFile = Strings.asLines(
+        const petitOutputLines = Strings.asLines(
             Io.readFile(LoopOmpAttributes[loopindex].petitOutputFileAddress)
         );
+        const PetitOutputDependencyFile = petitOutputLines
+            ?.toArray()
+            .map(String);
         Io.appendFile(
             LoopOmpAttributes[loopindex].petitInputFileAddress,
             "\n\n!" + Array(100).join("-") + "\n"

@@ -14,8 +14,8 @@ permissions:
     contents: read
 
 env:
-    JAVA_VERSION: 17
-    NODE_VERSION: 20.x
+    JAVA_VERSION: 21
+    NODE_VERSION: 22.x
     #CLAVA_BRANCH: PluginAndTool
     CLAVA_BRANCH: staging
 
@@ -132,7 +132,11 @@ jobs:
                   cd clava-autopar
                   npm run build
 
-            - name: Test
+            - name: Run Node tests
+              working-directory: clava-autopar
+              run: npm test -- --runInBand
+
+            - name: Run integration test
               # TODO: Remove 'if' when build is stable
               if: ${{ success() || ( failure() && (steps.lint.outcome == 'failure' || steps.build.outcome == 'failure')) }}
               run: |

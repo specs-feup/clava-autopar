@@ -64,17 +64,14 @@ export default function SetVariableAccess($ForStmt: Loop) {
 
     LoopOmpAttributes[loopindex].varAccess = [];
 
-    const $forFunction = $ForStmt.getAncestor("FunctionDecl");
+    const $forFunction = $ForStmt.getAncestor("function") as
+        | FunctionJp
+        | undefined;
     if ($forFunction === undefined) {
-        let $forRoot = $ForStmt.parent;
-        while ($forRoot.parent !== undefined) {
-            $forRoot = $forRoot.parent;
-        }
+        throw new Error("Could not find the function that contains the loop");
     }
 
-    const functionvarrefset = orderedVarrefs3(
-        $ForStmt.getAncestor("FunctionDecl")
-    );
+    const functionvarrefset = orderedVarrefs3($forFunction);
     const loopvarrefset = orderedVarrefs3($ForStmt);
 
     const noVarrefVariables = [];
@@ -116,8 +113,8 @@ export default function SetVariableAccess($ForStmt: Loop) {
             else if (vardeclRegion === "loop") declpos = "outside";
             else if (vardeclRegion === "scope") declpos = "inside";
             else if (
-                (vardecl.getAncestor("FunctionDecl") as FunctionJp).name ===
-                ($ForStmt.getAncestor("FunctionDecl") as FunctionJp).name
+                (vardecl.getAncestor("function") as FunctionJp).name ===
+                ($ForStmt.getAncestor("function") as FunctionJp).name
             )
                 declpos = "outside";
             else {
@@ -174,7 +171,7 @@ export default function SetVariableAccess($ForStmt: Loop) {
             use: useExpr,
             code: $varref.code,
             isInsideLoopHeader: $varref.isInsideLoopHeader,
-            parentlooprank: ($varref.getAncestor("ForStmt") as Loop).rank,
+            parentlooprank: ($varref.getAncestor("loop") as Loop).rank,
             IsdependentCurrentloop: false,
             IsdependentInnerloop: false,
             IsdependentOuterloop: false,

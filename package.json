@@ -11,6 +11,7 @@
         ".gitignore",
         "eslint.config.js",
         "jest.config.js",
+        "jestGlobalSetup.js",
         "LICENSE",
         "package.json",
         "README.md",

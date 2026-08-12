@@ -6,7 +6,7 @@ const config = {
   testEnvironmentOptions: {
     weaverConfig,
   },
-  globalSetup: "@specs-feup/lara/jest/jestGlobalSetup.js",
+  globalSetup: "./jestGlobalSetup.js",
   globalTeardown: "@specs-feup/lara/jest/jestGlobalTeardown.js",
   setupFiles: ["@specs-feup/lara/jest/setupFiles/sharedJavaModule.js"],
   //notify: true,

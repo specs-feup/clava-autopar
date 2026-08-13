@@ -3,7 +3,7 @@
 # Every push to a branch will trigger the build
 # Every pull request will trigger the build
 
-name: Canary Tests
+name: CI
 
 on:
     push:
